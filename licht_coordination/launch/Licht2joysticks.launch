@@ -1,0 +1,55 @@
+<launch>
+  <!-- 0-raw, 1-pos, 2-trj -->
+  <param name="flight_mode" value="0" type="int" />
+
+  <param name="vehicle_num" value="2" type="int" />
+  <param name="joy_num" value="2" type="int" />
+
+
+  <arg name="joy_dev0" default="/dev/input/js0" />
+  <arg name="joy_dev1" default="/dev/input/js1" />
+
+  <!--include file="$(find vicon_bridge)/launch/vicon.launch"/-->
+
+
+  <group ns="joygroup0">
+    <node pkg="joy" name="joy_node0" type="joy_node" >
+      <param name="dev" value="$(arg joy_dev0)" />
+    </node>
+  </group>
+
+  <group ns="joygroup1">
+    <node pkg="joy" name="joy_node1" type="joy_node" >
+      <param name="dev" value="$(arg joy_dev1)" />
+    </node>
+  </group>
+
+  <!--node pkg="easyfly" name="fly" type="fly" output="screen"/-->
+
+  <group ns="vehicle0">
+    <arg name="uri" default="radio:00A21300616D4E41" />
+    <node pkg="licht_controls" name="controller0" type="Lichtcontroller" >
+      <param name="ctrl_node_num" value="0" type="int"/>
+      <param name="uri" value="radio:00A21300616D4E41" />  <!--why repeat?/-->
+      <rosparam 
+        file="$(find licht_controls)/config/Lichtparam.yaml"
+        command="load" 
+      />
+    </node>
+  </group>
+
+  <group ns="vehicle1">
+    <arg name="uri" default="radio:00A21300616D4E42" />
+    <node pkg="licht_controls" name="controller1" type="Lichtcontroller" >
+      <param name="ctrl_node_num" value="1" type="int"/>
+      <param name="uri" value="radio:00A21300616D4E42" /><!--why repeat?/-->
+      <rosparam 
+        file="$(find licht_controls)/config/Lichtparam.yaml"
+        command="load" 
+      />
+    </node>
+  </group>
+
+  <node pkg="licht_controls" name="Lichtlinker" type="Lichtlinker" />
+  <node pkg="licht_coordination" name="Lichtcoord_centralized" type="Lichtcoord_centralized" output="screen"/>
+</launch>
