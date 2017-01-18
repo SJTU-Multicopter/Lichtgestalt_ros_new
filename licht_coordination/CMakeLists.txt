@@ -48,10 +48,10 @@ include_directories(
 )
 
 
-add_executable(Lichtcoord_centralized
-  src/Lichtcoord_centralized.cpp
+add_executable(Lichtcoord_manuel
+  src/Lichtcoord_manuel.cpp
 )
-target_link_libraries(Lichtcoord_centralized
+target_link_libraries(Lichtcoord_manuel
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )

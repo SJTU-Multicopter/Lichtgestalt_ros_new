@@ -43,7 +43,7 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-# include/licht_classes
+ include/licht_controls
 )
 
 

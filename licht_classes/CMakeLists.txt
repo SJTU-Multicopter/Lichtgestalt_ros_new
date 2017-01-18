@@ -25,6 +25,7 @@ include_directories(
 add_library(licht_classes
   src/Lichtgestalt.cpp
   src/Lichtbedienung.cpp
+  src/XbeeAPI.cpp
 )
 target_link_libraries(licht_classes
   ${USB_LIB}
