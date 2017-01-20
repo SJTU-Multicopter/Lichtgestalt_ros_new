@@ -18,6 +18,7 @@ add_message_files(
   Lichtsetpoints.msg
   Lichtsetpointsraw.msg
   Lichtstate.msg
+  Lichtyaw.msg
 )
 generate_messages(
   DEPENDENCIES

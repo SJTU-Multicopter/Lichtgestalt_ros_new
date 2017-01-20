@@ -18,6 +18,7 @@ public:
 	uint32_t AddDestination(Lichtgestalt * lichtgestalt);
 	//returns index of the destination
 	void sendPacket(uint32_t destIndex, uint8_t * data, uint8_t len);
+	void readPacket(uint32_t *destIndex, uint8_t * data, uint8_t len);
 	uint32_t listSize(void);
 private:
 	uint32_t _addr_l;

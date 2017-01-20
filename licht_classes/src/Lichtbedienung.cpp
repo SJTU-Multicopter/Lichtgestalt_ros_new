@@ -107,3 +107,7 @@ void Lichtradio::sendPacket(uint32_t destIndex, uint8_t * data, uint8_t len)
 	write(_fd, data, len);
 
 }
+void Lichtradio::readPacket(uint32_t *destIndex, uint8_t * data, uint8_t len)
+{
+	read(_fd, data, len);
+}
