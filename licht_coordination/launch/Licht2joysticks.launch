@@ -29,7 +29,7 @@
 
   <group ns="vehicle0">
     <param name="radio_index" value="0" type="int"/>
-    <param name="vehicle_addr_l" value="0x414E6DD2" />
+    <param name="vehicle_addr_l" value="0xD26D4E41" /> <!--written value="0x414E6DD2" /-->
     <node pkg="licht_controls" name="controller0" type="Lichtcontroller" >
       <param name="ctrl_node_num" value="0" type="int"/>
       <rosparam 
@@ -41,7 +41,7 @@
 
   <group ns="vehicle1">
     <param name="radio_index" value="0" type="int"/>
-    <param name="vehicle_addr_l" value="0x414E6D61" />
+    <param name="vehicle_addr_l" value="0x616D4E41" /> <!--written value="0x414E6D61" /-->
     <node pkg="licht_controls" name="controller1" type="Lichtcontroller" >
       <param name="ctrl_node_num" value="1" type="int"/>
       <rosparam 
@@ -52,7 +52,7 @@
   </group>
 
   <node pkg="licht_controls" name="Lichtlinker" type="Lichtlinker" >
-    <param name="radio0_addr_l" value="0x414E6DCA" />
+    <param name="radio0_addr_l" value="0xCA6D4E41" /> <!--written value="0x414E6DCA" /-->
   </node>
   <node pkg="licht_coordination" name="Lichtcoord_manuel" type="Lichtcoord_manuel" output="screen"/>
 </launch>

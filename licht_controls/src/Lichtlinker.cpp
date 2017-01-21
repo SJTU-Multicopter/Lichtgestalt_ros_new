@@ -1,4 +1,5 @@
 #include "ros/ros.h"
+#include "commons.h"
 #include <stdio.h> //sprintf
 #include <iostream>
 #include <vector>
@@ -13,6 +14,7 @@
 #include <boost/program_options.hpp>
 int g_vehicle_num = 2;
 int g_radio_num = 2;
+
 class Linker
 {
 private:
@@ -21,9 +23,6 @@ private:
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtoutput> vm_output;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;
-//	std::vector<geometry_msgs::Vector3> m_lpos_v;
-//	std::vector<ros::Time> m_lpos_time_v;
-//	std::vector<std::string> m_defaultUri_v, m_uri_v;
 	std::vector<Lichtgestalt> vm_vehicle;
 	std::vector<Lichtradio> vm_radio;
 public:
@@ -56,6 +55,11 @@ Linker::Linker(ros::NodeHandle& nh)
 		
 		sprintf(msg_name,"/vehicle%d/yaw",i);
 		vm_yawpub[i] = nh.advertise<licht_controls::Lichtyaw>(msg_name, 1);
+	}
+	for(int i=0;i<g_vehicle_num;i++){
+		vm_state[i].acc_est.x = 0;
+		vm_state[i].acc_est.y = 0;
+		vm_state[i].acc_est.z = 0;
 	}
 }
 Linker::~Linker()
@@ -106,7 +110,6 @@ void Linker::connect_radio(void)
 	for(int i=0;i<g_radio_num;i++){
 		vm_radio[i].SerialOpen(57600);
 	}
-	
 }
 void Linker::connect_vehicle(void)
 {
@@ -133,8 +136,16 @@ void Linker::iteration(const ros::TimerEvent& e)
 			vm_state[i].acc_est.x,
 			vm_state[i].acc_est.y,
 			vm_state[i].acc_est.z);
-		usleep(dt / (2 * g_vehicle_num) * 1000000);
+		usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
 	}
+//	std::vector<licht_controls::Lichtyaw*> yawList = &;
+//	std::vector<float> yawList(g_vehicle_num);
+	for(int i=0;i<g_radio_num;i++){
+		vm_radio[i].readBuf(vm_yaw);
+	}
+	for(int i=0;i<g_vehicle_num;i++)
+		vm_yawpub[i].publish(vm_yaw[i]);
+
 }
 void Linker::outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index)
 {
@@ -160,6 +171,6 @@ int main(int argc, char **argv)
 	linker.add_radio_vehicle();
 	linker.connect_radio();
 	linker.connect_vehicle();
-	linker.run(50);
+	linker.run(LINK_FREQ);
 	return 0;
 }

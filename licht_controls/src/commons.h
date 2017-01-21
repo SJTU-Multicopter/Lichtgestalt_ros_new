@@ -38,5 +38,6 @@ static int absolute_int32(float a){
 
 #define DEG2RAD 0.01745
 #define RAD2DEG 57.3
-
+#define CONTROL_FREQ 50
+#define LINK_FREQ 50
 #endif

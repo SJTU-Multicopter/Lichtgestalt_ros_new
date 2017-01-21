@@ -20,6 +20,7 @@ private:
 	uint32_t _index_in_radio;
 	uint32_t _addr_l;
 	uint8_t _status;
+	uint8_t _sendBuf[256];
 };
 
 #endif

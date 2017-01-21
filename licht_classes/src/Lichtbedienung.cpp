@@ -1,5 +1,6 @@
 #include "Lichtbedienung.h"
 #include "Lichtgestalt.h"
+#include "XbeeAPI.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,6 +12,9 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include "ros/ros.h"
+#include <licht_controls/Lichtyaw.h>//receive yaw
 Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {
 	_addr_l = addr_l;
@@ -102,13 +106,69 @@ uint32_t Lichtradio::listSize(void)
 {
 	return _LichtList.size();
 }
-void Lichtradio::sendPacket(uint32_t destIndex, uint8_t * data, uint8_t len)
+void Lichtradio::sendPacket(uint8_t * data, uint8_t len)
 {
-	uint32_t destAdd = _LichtList[destIndex]->getAddr();
 	write(_fd, data, len);
-
 }
-void Lichtradio::readPacket(uint32_t *destIndex, uint8_t * data, uint8_t len)
+void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 {
-	read(_fd, data, len);
+	int bufCnt;
+	ioctl (_fd, FIONREAD, &bufCnt);
+	read(_fd, _rcvBuf, bufCnt);
+	int start_index = 0;
+	for(int i=0;;i++){
+		int pack_head;
+		int pack_len;
+		bool ret = buffer_cut(_rcvBuf, bufCnt, start_index, &pack_head, &pack_len);
+		if (ret == false || start_index >= bufCnt)
+			break;
+		else{
+			start_index += pack_len;
+			//now process the package from _rcvBuf+pack_head to _rcvBuf+pack_head+pack_len
+			unsigned int from_addr_l;
+			float yaw;
+			uint32_t lichtIndex;
+			uint8_t api_id = api_pack_decode(_rcvBuf + pack_head, pack_len);
+			switch(api_id){
+				case API_ID_TX_REQ:{}//not for receiving
+				break;
+				case API_ID_TX_STATUS:{
+					api_tx_status_decode(_rcvBuf + pack_head, pack_len);
+				}
+				break;
+				case API_ID_RX_PACK:{
+					uint8_t descriptor = api_rx_decode(_rcvBuf + pack_head, pack_len, &from_addr_l);
+					lichtIndex = findIndex(from_addr_l);
+					if(lichtIndex == -1){
+						continue;
+					}
+					switch(descriptor){
+						case DSCR_YAW:{
+							decode_yaw(_rcvBuf + pack_head, pack_len, &yaw);
+							v_yaw[lichtIndex].yaw = yaw;
+						}
+						break;
+						case DSCR_ATT:{}
+						break;
+						case DSCR_GEN:{}
+						break;
+						default:
+						break;
+					}//switch descriptor
+				}//case rx_pack of api_id
+				break;
+				default:{}
+				break;
+			}//switch api_id
+		}
+	}
+}
+
+uint32_t Lichtradio::findIndex(uint32_t addr_l)
+{
+	for(int i=0;i<_LichtList.size();i++){
+		if(_LichtList[i]->getAddr() == addr_l)
+			return i;
+	}
+	return -1;
 }

@@ -37,7 +37,7 @@ void api_tx_status_decode(unsigned char * data, unsigned int pack_len)
 	memcpy(&delivery_status, data + 8, 1);
 	memcpy(&discovery_status, data + 9, 1);
 }
-unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len)
+unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len, unsigned int *from_addr_l)
 {
 	unsigned int src_address_high, src_address_low;
 	unsigned short src_network_address;
@@ -48,7 +48,16 @@ unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len)
 	memcpy(&src_network_address, data + 12, 2);
 	memcpy(&rcv_options, data + 14, 1);
 	memcpy(&descriptor, data + 15, 1);
+	*from_addr_l = src_address_low;
 	return descriptor;
+}
+void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw)
+{
+	short yaw_sh;
+	unsigned int timestamp;
+	memcpy(&timestamp, data + 16, 4);
+	memcpy(&yaw_sh, data + 20, 2);
+	*yaw = (float)yaw_sh / ATT_F;
 }
 /*
 void decode_cmd_acc(unsigned char * data, unsigned int pack_len, command_t* cmd, vec3f_t* mot_acc)
@@ -107,6 +116,21 @@ void decode_calibrate(unsigned char * data, unsigned int pack_len, calib_t* cal)
 	}
 }
 */
+void api_pack_encode(unsigned char * data, unsigned char frame_len)
+{
+	unsigned char start_delimiter = API_START_DELIMITER;
+	unsigned char zero = 0;
+	unsigned char checksum = 0;
+	unsigned char i = 0;
+	for(i=0;i<frame_len;i++){
+		checksum += *((unsigned char *)(data)+i+3);
+	}
+	checksum = 0xFF-checksum;
+	memcpy(data,&start_delimiter,1);
+	memcpy(data+1,&zero,1);
+	memcpy(data+2,&frame_len,1);
+	memcpy(data+3+frame_len,&checksum,1);
+}
 void api_tx_encode(unsigned char * data, unsigned int dest_addr_h, unsigned int dest_addr_l)
 {
 	unsigned char api_id = API_ID_TX_REQ;
@@ -123,20 +147,42 @@ void api_tx_encode(unsigned char * data, unsigned int dest_addr_h, unsigned int 
 	memcpy(data+15,&zero,1);
 	memcpy(data+16,&zero,1);
 }
-void api_pack_encode(unsigned char * data, unsigned char frame_len)
+unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az)
 {
-	unsigned char start_delimiter = API_START_DELIMITER;
-	unsigned char zero = 0;
-	unsigned char checksum = 0;
-	unsigned char i = 0;
-	for(i=0;i<frame_len;i++){
-		checksum += *((unsigned char *)(data)+i+3);
+	unsigned char descriptor = DSCR_CMD_ACC;
+	int i;
+	short q[4], thrust_sh,a[3];
+	unsigned int timestamp = 0;
+	q[0] = q0 * ATT_F;
+	q[1] = q1 * ATT_F;
+	q[2] = q2 * ATT_F;
+	q[3] = q3 * ATT_F;
+	thrust_sh = thrust * THR_F;
+	a[0] = ax * ACC_F * ACC_SENS;
+	a[1] = ay * ACC_F * ACC_SENS;
+	a[2] = az * ACC_F * ACC_SENS;
+	memcpy(data + 17, &descriptor, 1);
+	memcpy(data + 18, &timestamp, 4);
+	memcpy(data + 22, q, 8);
+	memcpy(data + 30, &thrust_sh, 2);
+	memcpy(data + 32, a, 6);
+	return 21;//length from desc to last data
+}
+bool buffer_cut(unsigned char * buf, int search_len, int start_index, int * pack_head, int * pack_len)
+{
+	for(int i = start_index; i < search_len; i++){
+		if(buf[i] == API_START_DELIMITER){
+			//this will skip API_ID_TX_STATUS because i+4 is 
+			//occupied by frameID for API_ID_TX_STATUS
+			if(buf[i+4] == 0x00 && buf[i+5] == 0x13 && buf[i+6] == 0xA2 && buf[i+7] == 0x00){
+				*pack_head = i;
+				int len = buf[i+2];
+				*pack_len = len + 4;
+				return true;
+			}
+		}
 	}
-	checksum = 0xFF-checksum;
-	memcpy(data,&start_delimiter,1);
-	memcpy(data+1,&zero,1);
-	memcpy(data+2,&frame_len,1);
-	memcpy(data+3+frame_len,&checksum,1);
+	return false;
 }
 /*
 unsigned char encode_sens_raw(unsigned char * data, const vec3i16_t* acc, const vec3i16_t* gyr,const vec3i16_t* mag)
@@ -189,7 +235,7 @@ unsigned char encode_att(unsigned char * data, const stateAtt_t* att)
 	memcpy(data + 22, q, 8);
 	return 13;//length from desc to last data
 }
-*/
+
 unsigned char encode_general_18(unsigned char * data, const void * data2send)
 {
 	unsigned char descriptor = DSCR_GEN;
@@ -199,3 +245,4 @@ unsigned char encode_general_18(unsigned char * data, const void * data2send)
 	memcpy(data + 22, data2send, 18);
 	return 23;//length from desc to last data
 }
+*/

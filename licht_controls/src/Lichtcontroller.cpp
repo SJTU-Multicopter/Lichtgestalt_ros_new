@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 //	n.getParam("/vehicle_num", g_vehicle_num);
 //	n.getParam("/joy_num", g_joy_num);
 	Controller controller(n);
-	controller.run(50);
+	controller.run(LINK_FREQ);
 	return 0;
 
 

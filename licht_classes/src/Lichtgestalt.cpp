@@ -1,5 +1,6 @@
 #include "Lichtbedienung.h"
 #include "Lichtgestalt.h"
+#include "XbeeAPI.h"
 Lichtgestalt::Lichtgestalt(uint32_t addr_l, uint32_t index_in_radio, Lichtradio* radio)
 {
 	_radio = radio;
@@ -16,7 +17,10 @@ void Lichtgestalt::sendAck(void)
 }
 void Lichtgestalt::sendAll(float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az)
 {
-	
+	uint8_t content_len = encode_cmd_acc(_sendBuf, q0,q1,q2,q3,thrust,ax,ay,az);
+	api_tx_encode(_sendBuf, 0x00A21300, _addr_l);
+	api_pack_encode(_sendBuf, content_len + 14);
+	_radio->sendPacket(_sendBuf, content_len + 14 + 4);
 }
 void Lichtgestalt::acquireYaw(void)
 {
