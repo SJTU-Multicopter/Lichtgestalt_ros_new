@@ -18,6 +18,10 @@ void Lichtgestalt::sendAll(float q0,float q1,float q2,float q3,float thrust,floa
 {
 	
 }
+void Lichtgestalt::acquireYaw(void)
+{
+	
+}
 uint32_t Lichtgestalt::getAddr(void)
 {
 	return _addr_l;

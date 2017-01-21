@@ -138,6 +138,7 @@ void Commander::iteration(const ros::TimerEvent& e)
 					}
 					if(throttle < 0.1){
 						yawspReset(i);
+						throttle=0;
 					}
 					vm_sp[i].raw.raw_att_sp.x = -vm_joy[i].axes[0] * MAX_ATT_MANUEL;//+-1
 					vm_sp[i].raw.raw_att_sp.y = vm_joy[i].axes[1] * MAX_ATT_MANUEL;

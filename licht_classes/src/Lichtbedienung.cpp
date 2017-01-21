@@ -11,18 +11,19 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-Lichtradio::Lichtradio(uint32_t addr_l)
+Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {
 	_addr_l = addr_l;
-
+	memcpy(_device_name, device_name,30);
 }
 Lichtradio::~Lichtradio()
 {
 
 
 }
-int Lichtradio::SerialOpen(const char *device, const int baud)
+int Lichtradio::SerialOpen(const int baud)
 {
+	char *device = _device_name;
 	struct termios options ;
 	speed_t myBaud ;
 	int     status, fd ;

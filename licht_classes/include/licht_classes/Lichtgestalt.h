@@ -13,6 +13,7 @@ public:
 	~Lichtgestalt();
 	void sendAck(void);
 	void sendAll(float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
+	void acquireYaw(void);
 	uint32_t getAddr(void);
 private:
 	Lichtradio* _radio;
