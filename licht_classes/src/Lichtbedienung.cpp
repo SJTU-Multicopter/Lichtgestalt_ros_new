@@ -168,7 +168,6 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 uint32_t Lichtradio::findIndex(uint32_t addr_l)
 {
 	for(int i=0;i<_LichtList.size();i++){
-		ROS_INFO("compare %x, %x",_LichtList[i]->_addr_l,addr_l);
 		if(_LichtList[i]->getAddr() == addr_l){
 
 			return i;

@@ -63,7 +63,7 @@ void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw)
 	unsigned int timestamp;
 	memcpy(&timestamp, data + 16, 4);
 	memcpy(&yaw_sh, data + 20, 2);
-	*yaw = (float)yaw_sh / ATT_F;
+	*yaw = (float)yaw_sh / YAW_F;
 }
 /*
 void decode_cmd_acc(unsigned char * data, unsigned int pack_len, command_t* cmd, vec3f_t* mot_acc)

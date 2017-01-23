@@ -154,7 +154,7 @@ void Linker::iteration(const ros::TimerEvent& e)
 			vm_output[i].q_sp[1],
 			vm_output[i].q_sp[2],
 			vm_output[i].q_sp[3],
-			vm_output[i].thrust,
+			vm_output[i].thrust*1000,
 			vm_state[i].acc_est.x,
 			vm_state[i].acc_est.y,
 			vm_state[i].acc_est.z);

@@ -321,6 +321,7 @@ void Controller::iteration(const ros::TimerEvent& e)
 				m_output.q_sp[2] = q2;
 				m_output.q_sp[3] = q3;
 				m_output.thrust = m_sp.raw.thrust;
+				m_outputpub.publish(m_output);
 			}
 			break;
 			case MODE_POS:{
