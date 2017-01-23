@@ -23,7 +23,7 @@ public:
 	uint32_t listSize(void);
 	void readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw);
 	uint32_t findIndex(uint32_t addr_l);
-private:
+//private:
 	uint32_t _addr_l;
 	char _device_name[30];
 	int _fd;

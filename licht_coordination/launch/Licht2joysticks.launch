@@ -6,8 +6,8 @@
   <param name="joy_num" value="2" type="int" />
   <param name="radio_num" value="1" type="int" />
 
-  <param name="joy_dev0" value="/dev/input/js0" />
-  <param name="joy_dev1" value="/dev/input/js1" />
+  <arg name="joy_dev0" default="/dev/input/js0" />
+  <arg name="joy_dev1" default="/dev/input/js1" />
   <param name="radio_dev0" value="/dev/ttyUSB0" />
   <!--arg name="radio_dev1" value="/dev/ttyUSB1" /-->
 
@@ -29,7 +29,8 @@
 
   <group ns="vehicle0">
     <param name="radio_index" value="0" type="int"/>
-    <param name="vehicle_addr_l" value="0xD26D4E41" /> <!--written value="0x414E6DD2" /-->
+    <param name="index_in_radio" value="0" type="int"/>
+    <param name="vehicle_addr_l" value="0xD26D4E41" /> 
     <node pkg="licht_controls" name="controller0" type="Lichtcontroller" >
       <param name="ctrl_node_num" value="0" type="int"/>
       <rosparam 
@@ -41,7 +42,8 @@
 
   <group ns="vehicle1">
     <param name="radio_index" value="0" type="int"/>
-    <param name="vehicle_addr_l" value="0x616D4E41" /> <!--written value="0x414E6D61" /-->
+    <param name="index_in_radio" value="1" type="int"/>
+    <param name="vehicle_addr_l" value="0xBE6D4E41" /> 
     <node pkg="licht_controls" name="controller1" type="Lichtcontroller" >
       <param name="ctrl_node_num" value="1" type="int"/>
       <rosparam 
@@ -51,8 +53,9 @@
     </node>
   </group>
 
-  <node pkg="licht_controls" name="Lichtlinker" type="Lichtlinker" >
-    <param name="radio0_addr_l" value="0xCA6D4E41" /> <!--written value="0x414E6DCA" /-->
+  <node pkg="licht_controls" name="Lichtlinker" type="Lichtlinker" output="screen">
+    <param name="radio0_addr_l" value="0x616D4E41" /> 
   </node>
   <node pkg="licht_coordination" name="Lichtcoord_manuel" type="Lichtcoord_manuel" output="screen"/>
+
 </launch>

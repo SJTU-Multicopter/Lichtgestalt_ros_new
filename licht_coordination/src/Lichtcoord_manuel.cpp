@@ -144,7 +144,7 @@ void Commander::iteration(const ros::TimerEvent& e)
 					vm_sp[i].raw.raw_att_sp.y = vm_joy[i].axes[1] * MAX_ATT_MANUEL;
 					float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
 					vm_sp[i].raw.raw_att_sp.z += yaw_moverate *dt;
-
+					
 					
 					vm_sp[i].raw.thrust = VEHICLE_MASS * GRAVITY * throttle * 2.0f;
 					vm_rawstptpub[i].publish(vm_sp[i].raw);

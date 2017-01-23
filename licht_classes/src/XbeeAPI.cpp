@@ -40,14 +40,20 @@ void api_tx_status_decode(unsigned char * data, unsigned int pack_len)
 unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len, unsigned int *from_addr_l)
 {
 	unsigned int src_address_high, src_address_low;
+	unsigned char add0,add1,add2,add3;
 	unsigned short src_network_address;
 	unsigned char rcv_options;
 	unsigned char descriptor;
 	memcpy(&src_address_high, data + 4, 4);
 	memcpy(&src_address_low, data + 8, 4);
+//	memcpy(&add0, data + 8, 1);
+//	memcpy(&add1, data + 9, 1);
+//	memcpy(&add2, data + 10, 1);
+//	memcpy(&add3, data + 11, 1);
 	memcpy(&src_network_address, data + 12, 2);
 	memcpy(&rcv_options, data + 14, 1);
 	memcpy(&descriptor, data + 15, 1);
+//	src_address_low = add3<<24|add2<<16|add1<<8|add0;
 	*from_addr_l = src_address_low;
 	return descriptor;
 }

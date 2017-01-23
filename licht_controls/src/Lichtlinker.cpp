@@ -44,6 +44,8 @@ Linker::Linker(ros::NodeHandle& nh)
 ,vm_state(g_vehicle_num)
 ,vm_output(g_vehicle_num)
 ,vm_yaw(g_vehicle_num)
+//,vm_radio(g_radio_num)
+//,vm_vehicle(g_vehicle_num)
 {
 	char msg_name[50];
 	for(int i=0;i<g_vehicle_num;i++){
@@ -63,7 +65,9 @@ Linker::Linker(ros::NodeHandle& nh)
 	}
 }
 Linker::~Linker()
-{}
+{
+
+}
 void Linker::add_radio_vehicle(void)
 {
 	ros::NodeHandle n;
@@ -80,12 +84,13 @@ void Linker::add_radio_vehicle(void)
 		n.getParam(msg_name, device_str);
 		const char* device_char = device_str.c_str();
 		Lichtradio radio(addr_l, device_char);
-
 		vm_radio.push_back(radio);
+//		vm_radio[i] = new Lichtradio(addr_l, device_char);
 	}
-	int last_radio_index = -1;
-	int index_in_radio = 0;
+	
+	
 	for(int i=0;i<g_vehicle_num;i++){
+		int index_in_radio = 0;
 		std::string addr_l_str;
 		uint32_t addr_l;
 		sprintf(msg_name,"/vehicle%d/vehicle_addr_l",i);
@@ -95,15 +100,32 @@ void Linker::add_radio_vehicle(void)
 		int radio_index;
 		sprintf(msg_name,"/vehicle%d/radio_index",i);
 		n.getParam(msg_name, radio_index);
-		if(last_radio_index != radio_index)
-			index_in_radio = 0;
-		else
-			index_in_radio++;
+		sprintf(msg_name,"/vehicle%d/index_in_radio",i);
+		n.getParam(msg_name, index_in_radio);
+
 		Lichtgestalt gestalt(addr_l, index_in_radio, &vm_radio[radio_index]);
+//		vm_vehicle[i] = new Lichtgestalt(addr_l, index_in_radio, &vm_radio[radio_index]);
 		vm_vehicle.push_back(gestalt);
-		vm_radio[radio_index].AddDestination(&vm_vehicle[i]);
-		last_radio_index = radio_index;
-	}	
+		
+	///	vm_radio[radio_index].AddDestination(&(vm_vehicle[i]));
+		
+		ROS_INFO("Lichtgestalt address %x added\n",vm_vehicle[i]._addr_l);
+		ROS_INFO("Lichtgestalt index in radio %x\n",vm_vehicle[i]._index_in_radio);
+		ROS_INFO("Lichtgestalt radio index %x\n",radio_index);
+	}
+	//push_back changes the address of all contents of the vector, so only after
+	//all Lichtgestalten are pushed back, can the pointer be set 
+	for(int j=0;j<g_radio_num;j++){
+		for(int i=0;i<g_vehicle_num;i++){
+			if(vm_vehicle[i]._radio == &vm_radio[j])
+			vm_radio[j]._LichtList.push_back(&(vm_vehicle[i]));
+		}
+	}
+	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[0]->getAddr());
+	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[1]->getAddr());
+	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[0]->_index_in_radio);
+	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[1]->_index_in_radio);
+
 }
 void Linker::connect_radio(void)
 {
@@ -145,7 +167,6 @@ void Linker::iteration(const ros::TimerEvent& e)
 	}
 	for(int i=0;i<g_vehicle_num;i++)
 		vm_yawpub[i].publish(vm_yaw[i]);
-
 }
 void Linker::outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index)
 {

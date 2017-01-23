@@ -92,6 +92,8 @@ method: identify 0x3E as well as addr_h
 bool buffer_cut(unsigned char * buf, int search_len, int start_index, int * pack_head, int * pack_len);
 #define ATT_Q 14
 #define ATT_F 16384.0f
+#define YAW_Q 12
+#define YAW_F 4096.0f
 #define THR_Q 0
 #define THR_F 1.0f
 #define ACC_Q 0
