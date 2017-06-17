@@ -121,10 +121,10 @@ void Linker::add_radio_vehicle(void)
 			vm_radio[j]._LichtList.push_back(&(vm_vehicle[i]));
 		}
 	}
-	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[0]->getAddr());
-	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[1]->getAddr());
-	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[0]->_index_in_radio);
-	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[1]->_index_in_radio);
+//	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[0]->getAddr());
+//	ROS_INFO("Lichtradio address %x added\n",vm_radio[0]._LichtList[1]->getAddr());
+//	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[0]->_index_in_radio);
+//	ROS_INFO("Lichtradio index %x added\n",vm_radio[0]._LichtList[1]->_index_in_radio);
 
 }
 void Linker::connect_radio(void)
@@ -146,9 +146,10 @@ void Linker::run(double freq)
 void Linker::iteration(const ros::TimerEvent& e)
 {
 	static float time_elapse = 0;
+	static int i = 0;
 	float dt = e.current_real.toSec() - e.last_real.toSec();
 	time_elapse += dt;
-	for(int i=0;i<g_vehicle_num;i++){
+//	for(int i=0;i<g_vehicle_num;i++){
 		vm_vehicle[i].sendAll(
 			vm_output[i].q_sp[0],
 			vm_output[i].q_sp[1],
@@ -158,8 +159,12 @@ void Linker::iteration(const ros::TimerEvent& e)
 			vm_state[i].acc_est.x,
 			vm_state[i].acc_est.y,
 			vm_state[i].acc_est.z);
-		usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
-	}
+		i++;
+		if(i==g_vehicle_num)
+			i=0;
+
+	//	usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
+//	}
 //	std::vector<licht_controls::Lichtyaw*> yawList = &;
 //	std::vector<float> yawList(g_vehicle_num);
 	for(int i=0;i<g_radio_num;i++){

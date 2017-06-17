@@ -109,6 +109,8 @@ uint32_t Lichtradio::listSize(void)
 void Lichtradio::sendPacket(uint8_t * data, uint8_t len)
 {
 	write(_fd, data, len);
+//	printf("package ");
+//	fflush(stdout);
 }
 void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 {
