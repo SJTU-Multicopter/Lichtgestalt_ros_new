@@ -14,7 +14,12 @@
 #include <boost/program_options.hpp>
 int g_vehicle_num = 2;
 int g_radio_num = 2;
-
+double get(const ros::NodeHandle& n, const std::string& name) 
+{
+	double value;
+	n.getParam(name, value);
+	return value;
+}
 class Linker
 {
 private:
@@ -149,6 +154,21 @@ void Linker::iteration(const ros::TimerEvent& e)
 	static int i = 0;
 	float dt = e.current_real.toSec() - e.last_real.toSec();
 	time_elapse += dt;
+	if(0){
+		ros::NodeHandle n("~");
+		for(int i=0;i<g_vehicle_num;i++){
+			vm_vehicle[i].sendTune(
+				get(n, "PIDs/PR/P"),
+				get(n, "PIDs/PR/Prate"),
+				get(n, "PIDs/PR/Irate"),
+				get(n, "PIDs/PR/Drate"),
+				get(n, "PIDs/Yaw/P"),
+				get(n, "PIDs/Yaw/Prate"),
+				get(n, "PIDs/Yaw/Irate"),
+				get(n, "PIDs/Yaw/Drate"));
+		}
+	}
+	else{
 //	for(int i=0;i<g_vehicle_num;i++){
 		vm_vehicle[i].sendAll(
 			vm_output[i].q_sp[0],
@@ -162,7 +182,7 @@ void Linker::iteration(const ros::TimerEvent& e)
 		i++;
 		if(i==g_vehicle_num)
 			i=0;
-
+	}
 	//	usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
 //	}
 //	std::vector<licht_controls::Lichtyaw*> yawList = &;

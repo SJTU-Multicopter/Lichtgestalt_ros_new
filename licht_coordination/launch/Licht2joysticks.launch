@@ -55,6 +55,10 @@
 
   <node pkg="licht_controls" name="Lichtlinker" type="Lichtlinker" output="screen">
     <param name="radio0_addr_l" value="0x616D4E41" /> 
+    <rosparam 
+      file="$(find licht_controls)/config/Lichtparam.yaml"
+      command="load" 
+    />
   </node>
   <node pkg="licht_coordination" name="Lichtcoord_manuel" type="Lichtcoord_manuel" output="screen"/>
 

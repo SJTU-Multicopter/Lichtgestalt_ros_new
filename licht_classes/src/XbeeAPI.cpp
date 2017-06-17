@@ -1,5 +1,6 @@
 #include "XbeeAPI.h"
 #include "string.h"
+#include <stdio.h>
 unsigned char api_pack_decode(unsigned char * data, unsigned int pack_len)
 {
 	unsigned char start_delimiter;
@@ -64,6 +65,46 @@ void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw)
 	memcpy(&timestamp, data + 16, 4);
 	memcpy(&yaw_sh, data + 20, 2);
 	*yaw = (float)yaw_sh / YAW_F;
+}
+void decode_pid(unsigned char * data, unsigned int pack_len)
+{
+//	[3E,0,api_len,90,	0-3
+//	add_H,H,H,H,	4-7
+//	add_L,L,L,L,	8-11
+//	src_net,src_net,rcv_opt,descriptor 0x01	12-15
+//	t,t,t,t,		16-19
+//	P,P,P,P		20-23
+//	p,p,p,p		24-27
+//	i,i,i,i		28-31
+//	d,d,d,d		32-35
+//	P,P,P,P		36-39
+//	p,p,p,p		40-43
+//	i,i,i,i		44-47
+//	d,d,d,d		48-51
+//	checksum		52	
+	float pr_P,pr_p,pr_i,pr_d;
+	float y_P,y_p,y_i,y_d;
+	unsigned int timestamp;
+	memcpy(&timestamp, data + 16, 4);
+	memcpy(&pr_P, data + 20, 4);
+	memcpy(&pr_p, data + 24, 4);
+	memcpy(&pr_i, data + 28, 4);
+	memcpy(&pr_d, data + 32, 4);
+	memcpy(&y_P, data + 36, 4);
+	memcpy(&y_p, data + 40, 4);
+	memcpy(&y_i, data + 44, 4);
+	memcpy(&y_d, data + 48, 4);
+	printf("Pitch and Roll:\n");
+	printf("\tP: %d\n",pr_P);
+	printf("\tPrate: %d\n",pr_p);
+	printf("\tIrate: %d\n",pr_i);
+	printf("\tDrate: %d\n",pr_d);
+	printf("Yaw:\n");
+	printf("\tP: %d\n",y_P);
+	printf("\tPrate: %d\n",y_p);
+	printf("\tIrate: %d\n",y_i);
+	printf("\tDrate: %d\n",y_d);
+	printf("check ok:\n");
 }
 /*
 void decode_cmd_acc(unsigned char * data, unsigned int pack_len, command_t* cmd, vec3f_t* mot_acc)
@@ -173,6 +214,23 @@ unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,fl
 	memcpy(data + 30, &thrust_sh, 2);
 	memcpy(data + 32, a, 6);
 	return 21;//length from desc to last data
+}
+unsigned char encode_pid(unsigned char * data, float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d)
+{
+	unsigned char descriptor = DSCR_CFG;
+	unsigned int timestamp = 0;
+
+	memcpy(data + 17, &descriptor, 1);
+	memcpy(data + 18, &timestamp, 4);
+	memcpy(data + 22, &pr_P, 4);
+	memcpy(data + 26, &pr_p, 4);
+	memcpy(data + 30, &pr_i, 4);
+	memcpy(data + 34, &pr_d, 4);
+	memcpy(data + 38, &y_P, 4);
+	memcpy(data + 42, &y_p, 4);
+	memcpy(data + 46, &y_i, 4);
+	memcpy(data + 50, &y_d, 4);
+	return 37;//length from desc to last data
 }
 bool buffer_cut(unsigned char * buf, int search_len, int start_index, int * pack_head, int * pack_len)
 {

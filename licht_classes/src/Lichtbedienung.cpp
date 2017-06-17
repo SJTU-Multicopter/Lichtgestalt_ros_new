@@ -142,7 +142,7 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 					uint8_t descriptor = api_rx_decode(_rcvBuf + pack_head, pack_len, &from_addr_l);
 					lichtIndex = findIndex(from_addr_l);
 					if(lichtIndex == -1){
-						ROS_INFO("address %x not found",from_addr_l);
+						ROS_INFO("received from unregistered %x",from_addr_l);
 						continue;
 					}
 					switch(descriptor){
@@ -154,6 +154,11 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 						case DSCR_ATT:{}
 						break;
 						case DSCR_GEN:{}
+						break;
+						case DSCR_PID:{
+							decode_pid(_rcvBuf + pack_head, pack_len);
+
+						}
 						break;
 						default:
 						break;

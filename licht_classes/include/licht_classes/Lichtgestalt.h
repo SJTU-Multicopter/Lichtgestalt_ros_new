@@ -13,6 +13,7 @@ public:
 	~Lichtgestalt();
 	void sendAck(void);
 	void sendAll(float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
+	void sendTune(float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d);
 	void acquireYaw(void);
 	uint32_t getAddr(void);
 //private:
