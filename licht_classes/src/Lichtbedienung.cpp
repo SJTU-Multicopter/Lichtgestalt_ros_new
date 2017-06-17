@@ -156,6 +156,7 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 						case DSCR_GEN:{}
 						break;
 						case DSCR_PID:{
+							ROS_INFO("received param from #%d",lichtIndex);
 							decode_pid(_rcvBuf + pack_head, pack_len);
 
 						}

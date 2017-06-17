@@ -9,6 +9,8 @@
 #include <licht_controls/Lichtcommands.h>
 #include <licht_controls/Lichtyaw.h>//receive yaw
 
+#include <std_msgs/Int32.h>
+
 #include <licht_classes/Lichtgestalt.h>
 #include <licht_classes/Lichtbedienung.h>
 #include <boost/program_options.hpp>
@@ -25,11 +27,13 @@ class Linker
 private:
 	std::vector<ros::Publisher> vm_yawpub;
 	std::vector<ros::Subscriber> vm_statesub, vm_outputsub;
+	ros::Subscriber tunesub;
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtoutput> vm_output;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;
 	std::vector<Lichtgestalt> vm_vehicle;
 	std::vector<Lichtradio> vm_radio;
+	int PID_rewrite;
 public:
 	Linker(ros::NodeHandle& nh);
 	~Linker();
@@ -41,6 +45,7 @@ public:
 	void iteration(const ros::TimerEvent& e);
 	void outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index);
 	void stateCallback(const licht_controls::Lichtstate::ConstPtr&msg, int vehicle_index);
+	void tuneCallback(const std_msgs::Int32::ConstPtr&msg);
 };
 Linker::Linker(ros::NodeHandle& nh)
 :vm_statesub(g_vehicle_num)
@@ -53,6 +58,7 @@ Linker::Linker(ros::NodeHandle& nh)
 //,vm_vehicle(g_vehicle_num)
 {
 	char msg_name[50];
+	PID_rewrite = -1;
 	for(int i=0;i<g_vehicle_num;i++){
 		sprintf(msg_name,"/vehicle%d/state_est",i);
 		vm_statesub[i] = nh.subscribe<licht_controls::Lichtstate>(msg_name,5,boost::bind(&Linker::stateCallback, this, _1, i));
@@ -63,6 +69,8 @@ Linker::Linker(ros::NodeHandle& nh)
 		sprintf(msg_name,"/vehicle%d/yaw",i);
 		vm_yawpub[i] = nh.advertise<licht_controls::Lichtyaw>(msg_name, 1);
 	}
+//	ros::NodeHandle n;
+	tunesub = nh.subscribe("/tune_index",1, &Linker::tuneCallback, this);
 	for(int i=0;i<g_vehicle_num;i++){
 		vm_state[i].acc_est.x = 0;
 		vm_state[i].acc_est.y = 0;
@@ -154,7 +162,7 @@ void Linker::iteration(const ros::TimerEvent& e)
 	static int i = 0;
 	float dt = e.current_real.toSec() - e.last_real.toSec();
 	time_elapse += dt;
-	if(0){
+	if(PID_rewrite>=0){
 		ros::NodeHandle n("~");
 		for(int i=0;i<g_vehicle_num;i++){
 			vm_vehicle[i].sendTune(
@@ -167,6 +175,7 @@ void Linker::iteration(const ros::TimerEvent& e)
 				get(n, "PIDs/Yaw/Irate"),
 				get(n, "PIDs/Yaw/Drate"));
 		}
+		PID_rewrite = -1;
 	}
 	else{
 //	for(int i=0;i<g_vehicle_num;i++){
@@ -206,6 +215,11 @@ void Linker::stateCallback(const licht_controls::Lichtstate::ConstPtr&msg, int v
 	vm_state[vehicle_index].acc_est.x = msg->acc_est.x;
 	vm_state[vehicle_index].acc_est.y = msg->acc_est.y;
 	vm_state[vehicle_index].acc_est.z = msg->acc_est.z;
+}
+void Linker::tuneCallback(const std_msgs::Int32::ConstPtr&msg)
+{
+	PID_rewrite = msg->data;
+	ROS_INFO("tuning");
 }
 int main(int argc, char **argv)
 {

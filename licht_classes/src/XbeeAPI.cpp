@@ -95,15 +95,15 @@ void decode_pid(unsigned char * data, unsigned int pack_len)
 	memcpy(&y_i, data + 44, 4);
 	memcpy(&y_d, data + 48, 4);
 	printf("Pitch and Roll:\n");
-	printf("\tP: %d\n",pr_P);
-	printf("\tPrate: %d\n",pr_p);
-	printf("\tIrate: %d\n",pr_i);
-	printf("\tDrate: %d\n",pr_d);
+	printf("\tP: %f\n",pr_P);
+	printf("\tPrate: %f\n",pr_p);
+	printf("\tIrate: %f\n",pr_i);
+	printf("\tDrate: %f\n",pr_d);
 	printf("Yaw:\n");
-	printf("\tP: %d\n",y_P);
-	printf("\tPrate: %d\n",y_p);
-	printf("\tIrate: %d\n",y_i);
-	printf("\tDrate: %d\n",y_d);
+	printf("\tP: %f\n",y_P);
+	printf("\tPrate: %f\n",y_p);
+	printf("\tIrate: %f\n",y_i);
+	printf("\tDrate: %f\n",y_d);
 	printf("check ok:\n");
 }
 /*

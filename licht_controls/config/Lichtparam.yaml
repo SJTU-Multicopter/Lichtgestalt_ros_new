@@ -31,14 +31,14 @@ PIDs:
     integratorMax: 1000.0
 
   PR:
-    P: 1.6
-    Prate: 16.0
+    P: 1.8
+    Prate: 12.0
     Irate: 0.0
     Drate: 0.0
 
   Yaw:
-    P: 0.75
-    Prate: 10.0
+    P: 0.7
+    Prate: 9.0
     Irate: 0.0
     Drate: 0.0
 

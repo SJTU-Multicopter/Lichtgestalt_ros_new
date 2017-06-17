@@ -71,3 +71,11 @@ target_link_libraries(Lichtestimator
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
+
+add_executable(Lichttune
+  src/Lichttune.cpp
+)
+target_link_libraries(Lichttune
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)

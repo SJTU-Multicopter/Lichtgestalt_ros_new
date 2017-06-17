@@ -1,4 +1,4 @@
 <launch>
-
-
+  <param name="tune_index" value="0" type="int" />
+  <node pkg="licht_controls" name="tune" type="Lichttune" output="screen"/>
 </launch>
