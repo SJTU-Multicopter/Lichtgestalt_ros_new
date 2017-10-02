@@ -6,12 +6,13 @@
 #include <sensor_msgs/Joy.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Twist.h>
-#include <licht_controls/Lichtsetpoints.h>
-#include <licht_controls/Lichtoutput.h>
-#include <licht_controls/Lichtsetpointsraw.h>
-#include <licht_controls/Lichtstate.h>
-#include <licht_controls/Lichtcommands.h>
-#include <licht_controls/Lichtyaw.h>
+#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtsetpoints.h>
+#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtoutput.h>
+#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtsetpointsraw.h>
+#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtstate.h>
+#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtcommands.h>
+//#include <licht_controls/Lichtyaw.h>
+#include  "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"
 #define MAX_ATT_MANUEL 0.698f//11437 40deg,0.698rad
 #define MAX_YAW_RATE_MANEUL 0.698f
 #define YAWRATE_DEADZONE 0.17f
@@ -21,6 +22,11 @@
 #define Z_RATE_DEADZONE 0.2f
 int g_vehicle_num=2;
 int g_joy_num=2;
+/*added by Wade*/
+typedef enum place_e {
+	PLACE_INDOOR = 0,
+	PLACE_OUTDOOR
+} flightplace_t;
 typedef enum mode_e {
 	MODE_RAW = 0,
 	MODE_POS,

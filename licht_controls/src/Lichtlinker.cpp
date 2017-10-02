@@ -8,7 +8,7 @@
 #include <licht_controls/Lichtstate.h>//send acc out
 #include <licht_controls/Lichtcommands.h>
 #include <licht_controls/Lichtyaw.h>//receive yaw
-
+#include <licht_controls/Lichtsetpoints.h>
 #include <std_msgs/Int32.h>
 
 #include <licht_classes/Lichtgestalt.h>
@@ -27,12 +27,14 @@ class Linker
 private:
 	std::vector<ros::Publisher> vm_yawpub;
 	std::vector<ros::Subscriber> vm_statesub, vm_outputsub;
+	std::vector<ros::Subscriber> vm_outdoorsub;//added by Wade
 	ros::Subscriber tunesub;
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtoutput> vm_output;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;
 	std::vector<Lichtgestalt> vm_vehicle;
 	std::vector<Lichtradio> vm_radio;
+	std::vector<licht_controls::Lichtsetpoints> vm_outdoor;//added by Wade
 	int PID_rewrite;
 public:
 	Linker(ros::NodeHandle& nh);
@@ -46,6 +48,7 @@ public:
 	void outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index);
 	void stateCallback(const licht_controls::Lichtstate::ConstPtr&msg, int vehicle_index);
 	void tuneCallback(const std_msgs::Int32::ConstPtr&msg);
+	void outdoorCallback(const licht_controls::Lichtsetpoints::ConstPtr& msg, int vehicle_index);//added by Wade
 };
 Linker::Linker(ros::NodeHandle& nh)
 :vm_statesub(g_vehicle_num)
@@ -54,6 +57,8 @@ Linker::Linker(ros::NodeHandle& nh)
 ,vm_state(g_vehicle_num)
 ,vm_output(g_vehicle_num)
 ,vm_yaw(g_vehicle_num)
+,vm_outdoorsub(g_vehicle_num)//added by Wade
+,vm_outdoor(g_vehicle_num)//added by Wade
 //,vm_radio(g_radio_num)
 //,vm_vehicle(g_vehicle_num)
 {
@@ -66,6 +71,10 @@ Linker::Linker(ros::NodeHandle& nh)
 		sprintf(msg_name,"/vehicle%d/output",i);
 		vm_outputsub[i] = nh.subscribe<licht_controls::Lichtoutput>(msg_name,5,boost::bind(&Linker::outputCallback, this, _1, i));
 		
+		/*added by Wade*/
+		sprintf(msg_name,"/vehicle%d/pos_ctrl_sp",i);
+		vm_outdoorsub[i] = nh.subscribe<licht_controls::Lichtsetpoints>(msg_name,5,boost::bind(&Linker::outdoorCallback, this, _1, i));
+
 		sprintf(msg_name,"/vehicle%d/yaw",i);
 		vm_yawpub[i] = nh.advertise<licht_controls::Lichtyaw>(msg_name, 1);
 	}
@@ -179,7 +188,7 @@ void Linker::iteration(const ros::TimerEvent& e)
 	}
 	else{
 //	for(int i=0;i<g_vehicle_num;i++){
-		vm_vehicle[i].sendAll(
+			vm_vehicle[i].sendAll(
 			vm_output[i].q_sp[0],
 			vm_output[i].q_sp[1],
 			vm_output[i].q_sp[2],
@@ -192,6 +201,23 @@ void Linker::iteration(const ros::TimerEvent& e)
 		if(i==g_vehicle_num)
 			i=0;
 	}
+
+	/*added by Wade*/
+	/*{
+			vm_vehicle[i].sendPosSp(
+			vm_outdoor[i].pos_sp.x,
+			vm_outdoor[i].pos_sp.y,
+			vm_outdoor[i].pos_sp.z,
+			vm_outdoor[i].vel_ff.x,
+			vm_outdoor[i].vel_ff.y,
+			vm_outdoor[i].vel_ff.z,
+			0.0,0.0,0.0,
+			vm_outdoor[i].yaw_sp);
+		i++;
+		if(i==g_vehicle_num)
+			i=0;
+	}*/
+
 	//	usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
 //	}
 //	std::vector<licht_controls::Lichtyaw*> yawList = &;
@@ -221,6 +247,19 @@ void Linker::tuneCallback(const std_msgs::Int32::ConstPtr&msg)
 	PID_rewrite = msg->data;
 	ROS_INFO("tuning");
 }
+
+/*added by Wade*/
+void Linker::outdoorCallback(const licht_controls::Lichtsetpoints::ConstPtr& msg, int vehicle_index)
+{
+	vm_outdoor[vehicle_index].pos_sp.x = msg->pos_sp.x;
+	vm_outdoor[vehicle_index].pos_sp.y = msg->pos_sp.y;
+	vm_outdoor[vehicle_index].pos_sp.z = msg->pos_sp.z;
+	vm_outdoor[vehicle_index].vel_ff.x = msg->vel_ff.x;
+	vm_outdoor[vehicle_index].vel_ff.y = msg->vel_ff.y;
+	vm_outdoor[vehicle_index].vel_ff.z = msg->vel_ff.z;
+	vm_outdoor[vehicle_index].yaw_sp = msg->yaw_sp;
+}
+
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "linker");

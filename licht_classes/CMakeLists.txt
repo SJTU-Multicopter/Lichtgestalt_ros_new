@@ -18,8 +18,8 @@ catkin_package(
 
 
 include_directories(
-#  ${catkin_INCLUDE_DIRS}
- include/licht_classes
+  ${catkin_INCLUDE_DIRS}
+  include/licht_classes
 )
 
 add_library(licht_classes

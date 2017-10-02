@@ -11,6 +11,7 @@ class Lichtgestalt
 public:
 	Lichtgestalt(uint32_t addr_l, uint32_t index_in_radio, Lichtradio* radio);
 	~Lichtgestalt();
+	void sendPosSp(float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw);//added by Wade
 	void sendAck(void);
 	void sendAll(float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
 	void sendTune(float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d);

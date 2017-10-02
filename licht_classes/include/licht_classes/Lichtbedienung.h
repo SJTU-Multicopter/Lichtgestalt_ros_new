@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <vector>
 #include "ros/ros.h"
-#include <licht_controls/Lichtyaw.h>
+//#include <licht_controls/Lichtyaw.h>
+#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"
 class Lichtradio;
 class Lichtgestalt;
 typedef std::vector<Lichtgestalt*> LichtgestaltList;

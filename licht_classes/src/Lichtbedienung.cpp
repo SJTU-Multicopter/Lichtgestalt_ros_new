@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 
 #include "ros/ros.h"
-#include <licht_controls/Lichtyaw.h>//receive yaw
+#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"//receive yaw
 Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {
 	_addr_l = addr_l;
