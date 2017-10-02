@@ -33,7 +33,12 @@ void Lichtgestalt::sendTune(float pr_P,float pr_p,float pr_i,float pr_d,float y_
 /*added by Wade*/
 void Lichtgestalt::sendPosSp(float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw)
 {
-
+	unsigned char em;
+	em = 0;
+	uint8_t content_len = encode_pos_sp(_sendBuf, x,y,z,vx,vy,vz,ax,ay,az,yaw,em);
+	api_tx_encode(_sendBuf, 0x00A21300, _addr_l);
+	api_pack_encode(_sendBuf, content_len + 14);
+	_radio->sendPacket(_sendBuf, content_len + 14 + 4);
 }
 
 void Lichtgestalt::acquireYaw(void)

@@ -215,6 +215,30 @@ unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,fl
 	memcpy(data + 32, a, 6);
 	return 21;//length from desc to last data
 }
+unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,unsigned char em)
+{
+	unsigned char descriptor = DSCR_POSCTL;
+	short pos[3], vel[3], acc[3], yw, e;
+	unsigned int timestamp = 0;
+	pos[0] = x * 1000;
+	pos[1] = y * 1000;
+	pos[2] = z * 1000;
+	vel[0] = vx * 1000;
+	vel[1] = vy * 1000;
+	vel[2] = vz * 1000;
+	acc[0] = 0 * 1000;
+	acc[1] = 0 * 1000;
+	acc[2] = 0 * 1000;
+	yw = yaw * YAW_F;
+	memcpy(data + 17, &descriptor, 1);
+	memcpy(data + 18, &timestamp, 4);
+	memcpy(data + 22, pos, 12);
+	memcpy(data + 34, vel, 6);
+	memcpy(data + 40, acc, 6);
+	memcpy(data + 46, &yw, 2);
+	memcpy(data + 48, &e, 2);
+	return 33;//length from desc to last data
+}
 unsigned char encode_pid(unsigned char * data, float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d)
 {
 	unsigned char descriptor = DSCR_CFG;

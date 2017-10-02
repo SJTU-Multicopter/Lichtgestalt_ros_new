@@ -58,6 +58,7 @@ private:
 	ros::Publisher m_cmdpub;
 	std::vector<ros::Subscriber> vm_joysub, vm_statesub, vm_yawsub;
 	flightmode_t m_mode;
+	flightplace_t m_place;//added by Wade
 	flightstatus_t m_status;
 	std::vector<joy_t> vm_joy;
 	std::vector<setpoints_t> vm_sp;
@@ -121,6 +122,14 @@ void Commander::run(double freq)
 		case 2: m_mode = MODE_TRJ;break;
 		default:break;
 	}
+	/*added by Wade*/
+	int place;
+	node.getParam("/flight_place", place);
+	switch(place){
+		case 0: m_place = PLACE_INDOOR;break;
+		case 1: m_place = PLACE_OUTDOOR;break;
+		default:break;
+	}
 	ros::Timer timer = node.createTimer(ros::Duration(1.0/freq), &Commander::iteration, this);
 	ros::spin();
 }
@@ -129,101 +138,123 @@ void Commander::iteration(const ros::TimerEvent& e)
 	static float time_elapse = 0;
 	float dt = e.current_real.toSec() - e.last_real.toSec();
 	time_elapse += dt;
-	//cut off
-	if(vm_joy[0].curr_buttons[4] == 1 && vm_joy[0].curr_buttons[5] == 1){
-		m_cmd.cut = 1;
+
+	if (m_place)
+	{
+		for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+			float pos_moverate[3];
+			pos_moverate[0] = dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+			pos_moverate[1] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+			pos_moverate[2] = dead_zone_f(vm_joy[i].axes[3] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
+			vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
+			vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
+			vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
+			vm_sp[i].pos.vel_ff.x = pos_moverate[0];
+			vm_sp[i].pos.vel_ff.y = pos_moverate[1];
+			vm_sp[i].pos.vel_ff.z = pos_moverate[2];
+			float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
+			vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
+			vm_posstptpub[i].publish(vm_sp[i].pos);
+		}
 	}
-	else{
-		switch(m_mode){
-			case MODE_RAW:{
-			//	static float yaw_sp;
-				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-					float throttle = vm_joy[i].axes[2];//0-1
-					if(throttle<0){
-						throttle=0;
-					}
-					if(throttle < 0.1){
-						yawspReset(i);
-						throttle=0;
-					}
-					vm_sp[i].raw.raw_att_sp.x = -vm_joy[i].axes[0] * MAX_ATT_MANUEL;//+-1
-					vm_sp[i].raw.raw_att_sp.y = vm_joy[i].axes[1] * MAX_ATT_MANUEL;
-					float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
-					vm_sp[i].raw.raw_att_sp.z += yaw_moverate *dt;
-					
-					
-					vm_sp[i].raw.thrust = VEHICLE_MASS * GRAVITY * throttle * 2.0f;
-					vm_rawstptpub[i].publish(vm_sp[i].raw);
-				}
-			}
-			break;
-			case MODE_POS:{
-				if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == 1){//take off
-					vm_joy[0].changed_arrow[1] = false;
-					if(m_status == STATUS_LANDED){
-						for(int i=0;i<g_vehicle_num;i++){
-							posspReset(i);
+	else {
+		//cut off
+		if(vm_joy[0].curr_buttons[4] == 1 && vm_joy[0].curr_buttons[5] == 1){
+			m_cmd.cut = 1;
+		}
+		else{
+			switch(m_mode){
+				case MODE_RAW:{
+				//	static float yaw_sp;
+					for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+						float throttle = vm_joy[i].axes[2];//0-1
+						if(throttle<0){
+							throttle=0;
+						}
+						if(throttle < 0.1){
 							yawspReset(i);
+							throttle=0;
 						}
-						m_status = STATUS_TAKINGOFF;
+						vm_sp[i].raw.raw_att_sp.x = -vm_joy[i].axes[0] * MAX_ATT_MANUEL;//+-1
+						vm_sp[i].raw.raw_att_sp.y = vm_joy[i].axes[1] * MAX_ATT_MANUEL;
+						float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
+						vm_sp[i].raw.raw_att_sp.z += yaw_moverate *dt;
+										
+						vm_sp[i].raw.thrust = VEHICLE_MASS * GRAVITY * throttle * 2.0f;
+						vm_rawstptpub[i].publish(vm_sp[i].raw);
 					}
 				}
-				else if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == -1){//land
-					vm_joy[0].changed_arrow[1] = false;
-					if(m_status == STATUS_FLYING || m_status == STATUS_TAKINGOFF)
-						m_status = STATUS_LANDING;
+				break;
+				case MODE_POS:{
+					if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == 1){//take off
+						vm_joy[0].changed_arrow[1] = false;
+						if(m_status == STATUS_LANDED){
+							for(int i=0;i<g_vehicle_num;i++){
+								posspReset(i);
+								yawspReset(i);
+							}
+							m_status = STATUS_TAKINGOFF;
+						}
+					}
+					else if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == -1){//land
+						vm_joy[0].changed_arrow[1] = false;
+						if(m_status == STATUS_FLYING || m_status == STATUS_TAKINGOFF)
+							m_status = STATUS_LANDING;
+					}
+
+					switch(m_status){
+						case STATUS_LANDED:{
+							for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+							}
+							//all motors off
+						}
+						break;
+						case STATUS_FLYING:{
+							for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+								float pos_moverate[3];
+								pos_moverate[0] = dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+								pos_moverate[1] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+								pos_moverate[2] = dead_zone_f(vm_joy[i].axes[3] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
+								vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
+								vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
+								vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
+								vm_sp[i].pos.vel_ff.x = pos_moverate[0];
+								vm_sp[i].pos.vel_ff.y = pos_moverate[1];
+								vm_sp[i].pos.vel_ff.z = pos_moverate[2];
+								float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
+								vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
+								vm_posstptpub[i].publish(vm_sp[i].pos);
+							}
+						}
+						break;
+						case STATUS_TAKINGOFF:{
+							for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+							}
+							//TODO judge if it is time to get into Automatic
+						}
+						break;
+						case STATUS_LANDING:{
+							for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+							}
+							//TODO judge if it is time to get into Idle
+						}
+						break;
+						default:
+						break;
+					}//end switch state
+				}//end case posctrl mode
+				break;
+				case MODE_TRJ:{
+
 				}
+				break;
+				default:
+				break;
+			}//end switch mode
+		}//end of cut off case
+	}
 
-				switch(m_status){
-					case STATUS_LANDED:{
-						for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-						}
-						//all motors off
-					}
-					break;
-					case STATUS_FLYING:{
-						for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-							float pos_moverate[3];
-							pos_moverate[0] = dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-							pos_moverate[1] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-							pos_moverate[2] = dead_zone_f(vm_joy[i].axes[3] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
-							vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
-							vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
-							vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
-							vm_sp[i].pos.vel_ff.x = pos_moverate[0];
-							vm_sp[i].pos.vel_ff.y = pos_moverate[1];
-							vm_sp[i].pos.vel_ff.z = pos_moverate[2];
-							float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
-							vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
-							vm_posstptpub[i].publish(vm_sp[i].pos);
-						}
-					}
-					break;
-					case STATUS_TAKINGOFF:{
-						for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-						}
-						//TODO judge if it is time to get into Automatic
-					}
-					break;
-					case STATUS_LANDING:{
-						for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-						}
-						//TODO judge if it is time to get into Idle
-					}
-					break;
-					default:
-					break;
-				}//end switch state
-			}//end case posctrl mode
-			break;
-			case MODE_TRJ:{
-
-			}
-			break;
-			default:
-			break;
-		}//end switch mode
-	}//end of cut off case
+	
 	m_cmd.flight_state = m_status;
 	m_cmdpub.publish(m_cmd);
 	m_cmd.l_flight_state = m_status;

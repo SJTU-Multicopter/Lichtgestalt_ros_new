@@ -16,6 +16,11 @@
 #include <boost/program_options.hpp>
 int g_vehicle_num = 2;
 int g_radio_num = 2;
+/*added by Wade*/
+typedef enum place_e {
+	PLACE_INDOOR = 0,
+	PLACE_OUTDOOR
+} flightplace_t;
 double get(const ros::NodeHandle& n, const std::string& name) 
 {
 	double value;
@@ -36,6 +41,7 @@ private:
 	std::vector<Lichtradio> vm_radio;
 	std::vector<licht_controls::Lichtsetpoints> vm_outdoor;//added by Wade
 	int PID_rewrite;
+	flightplace_t m_place;//added by Wade
 public:
 	Linker(ros::NodeHandle& nh);
 	~Linker();
@@ -162,6 +168,14 @@ void Linker::connect_vehicle(void)
 void Linker::run(double freq)
 {
 	ros::NodeHandle node;
+	/*added by Wade*/
+	int place;
+	node.getParam("/flight_place", place);
+	switch(place){
+		case 0: m_place = PLACE_INDOOR;break;
+		case 1: m_place = PLACE_OUTDOOR;break;
+		default:break;
+	}
 	ros::Timer timer = node.createTimer(ros::Duration(1.0/freq), &Linker::iteration, this);
 	ros::spin();
 }
@@ -187,23 +201,9 @@ void Linker::iteration(const ros::TimerEvent& e)
 		PID_rewrite = -1;
 	}
 	else{
-//	for(int i=0;i<g_vehicle_num;i++){
-			vm_vehicle[i].sendAll(
-			vm_output[i].q_sp[0],
-			vm_output[i].q_sp[1],
-			vm_output[i].q_sp[2],
-			vm_output[i].q_sp[3],
-			vm_output[i].thrust*1000,
-			vm_state[i].acc_est.x,
-			vm_state[i].acc_est.y,
-			vm_state[i].acc_est.z);
-		i++;
-		if(i==g_vehicle_num)
-			i=0;
-	}
-
-	/*added by Wade*/
-	/*{
+		if (m_place)
+		{
+			/*added by Wade*/
 			vm_vehicle[i].sendPosSp(
 			vm_outdoor[i].pos_sp.x,
 			vm_outdoor[i].pos_sp.y,
@@ -213,10 +213,23 @@ void Linker::iteration(const ros::TimerEvent& e)
 			vm_outdoor[i].vel_ff.z,
 			0.0,0.0,0.0,
 			vm_outdoor[i].yaw_sp);
+		}
+		else {
+			
+			vm_vehicle[i].sendAll(
+			vm_output[i].q_sp[0],
+			vm_output[i].q_sp[1],
+			vm_output[i].q_sp[2],
+			vm_output[i].q_sp[3],
+			vm_output[i].thrust*1000,
+			vm_state[i].acc_est.x,
+			vm_state[i].acc_est.y,
+			vm_state[i].acc_est.z);
+		}
 		i++;
 		if(i==g_vehicle_num)
 			i=0;
-	}*/
+	}
 
 	//	usleep(1000000 / (2 * LINK_FREQ * g_vehicle_num));//send separately
 //	}
