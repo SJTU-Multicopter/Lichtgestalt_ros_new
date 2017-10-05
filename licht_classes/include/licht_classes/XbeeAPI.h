@@ -57,6 +57,7 @@
 #define DSCR_CMD_ACC 0x01
 #define DSCR_CAL 0x02
 #define DSCR_CFG 0x03
+#define DSCR_POSCTL 0x04
 
 #define DSCR_SENS_RAW 0x11
 #define DSCR_SENS 0x12
@@ -64,7 +65,7 @@
 #define DSCR_GEN 0x14
 #define DSCR_YAW 0x15
 #define DSCR_PID 0x16
-#define DSCR_POSCTL 0x17
+
 unsigned char api_pack_decode(unsigned char * data, unsigned int pack_len);
 void api_tx_status_decode(unsigned char * data, unsigned int pack_len);
 unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len, unsigned int *from_addr_l);

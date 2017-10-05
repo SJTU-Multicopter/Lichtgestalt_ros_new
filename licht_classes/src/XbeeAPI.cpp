@@ -218,7 +218,8 @@ unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,fl
 unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,unsigned char em)
 {
 	unsigned char descriptor = DSCR_POSCTL;
-	short pos[3], vel[3], acc[3], yw, e;
+	short vel[3], acc[3], yw, e;
+	int pos[3];
 	unsigned int timestamp = 0;
 	pos[0] = x * 1000;
 	pos[1] = y * 1000;
