@@ -14,17 +14,13 @@
   <!--include file="$(find vicon_bridge)/launch/vicon.launch"/-->
 
 
-  <group ns="joygroup0">
-    <node pkg="joy" name="joy_node0" type="joy_node" >
-      <param name="dev" value="$(arg joy_dev0)" />
-    </node>
-  </group>
+
 
 
   <group ns="vehicle0">
     <param name="radio_index" value="0" type="int"/>
     <param name="index_in_radio" value="0" type="int"/>
-    <param name="vehicle_addr_l" value="0xD26D4E41" /> 
+    <param name="vehicle_addr_l" value="0xBE6D4E41" /> 
     <node pkg="licht_controls" name="controller0" type="Lichtcontroller" >
       <param name="ctrl_node_num" value="0" type="int"/>
       <rosparam 
