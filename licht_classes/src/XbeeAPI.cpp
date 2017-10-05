@@ -106,6 +106,13 @@ void decode_pid(unsigned char * data, unsigned int pack_len)
 	printf("\tDrate: %f\n",y_d);
 	printf("check ok:\n");
 }
+void decode_general_18(unsigned char * data, unsigned int pack_len, short * data2receive)
+{
+//	short data2receive[18];
+	unsigned int timestamp;
+	memcpy(&timestamp, data + 16, 4);
+	memcpy(data2receive, data+20, 36);
+}
 /*
 void decode_cmd_acc(unsigned char * data, unsigned int pack_len, command_t* cmd, vec3f_t* mot_acc)
 {

@@ -9,6 +9,7 @@
 #include <licht_controls/Lichtcommands.h>
 #include <licht_controls/Lichtyaw.h>//receive yaw
 #include <licht_controls/Lichtsetpoints.h>
+#include <licht_controls/data18.h>
 #include <std_msgs/Int32.h>
 
 #include <licht_classes/Lichtgestalt.h>
@@ -31,12 +32,14 @@ class Linker
 {
 private:
 	std::vector<ros::Publisher> vm_yawpub;
+	std::vector<ros::Publisher> vm_data18pub;
 	std::vector<ros::Subscriber> vm_statesub, vm_outputsub;
 	std::vector<ros::Subscriber> vm_outdoorsub;//added by Wade
 	ros::Subscriber tunesub;
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtoutput> vm_output;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;
+	std::vector<licht_controls::data18> vm_data18;
 	std::vector<Lichtgestalt> vm_vehicle;
 	std::vector<Lichtradio> vm_radio;
 	std::vector<licht_controls::Lichtsetpoints> vm_outdoor;//added by Wade
@@ -60,9 +63,11 @@ Linker::Linker(ros::NodeHandle& nh)
 :vm_statesub(g_vehicle_num)
 ,vm_outputsub(g_vehicle_num)
 ,vm_yawpub(g_vehicle_num)
+,vm_data18pub(g_vehicle_num)
 ,vm_state(g_vehicle_num)
 ,vm_output(g_vehicle_num)
 ,vm_yaw(g_vehicle_num)
+,vm_data18(g_vehicle_num)
 ,vm_outdoorsub(g_vehicle_num)//added by Wade
 ,vm_outdoor(g_vehicle_num)//added by Wade
 //,vm_radio(g_radio_num)
@@ -83,6 +88,9 @@ Linker::Linker(ros::NodeHandle& nh)
 
 		sprintf(msg_name,"/vehicle%d/yaw",i);
 		vm_yawpub[i] = nh.advertise<licht_controls::Lichtyaw>(msg_name, 1);
+
+		sprintf(msg_name,"/vehicle%d/data18",i);
+		vm_data18pub[i] = nh.advertise<licht_controls::data18>(msg_name, 1);
 	}
 //	ros::NodeHandle n;
 	tunesub = nh.subscribe("/tune_index",1, &Linker::tuneCallback, this);
@@ -236,10 +244,12 @@ void Linker::iteration(const ros::TimerEvent& e)
 //	std::vector<licht_controls::Lichtyaw*> yawList = &;
 //	std::vector<float> yawList(g_vehicle_num);
 	for(int i=0;i<g_radio_num;i++){
-		vm_radio[i].readBuf(vm_yaw);
+		vm_radio[i].readBuf(vm_yaw, vm_data18);
 	}
-	for(int i=0;i<g_vehicle_num;i++)
+	for(int i=0;i<g_vehicle_num;i++){
 		vm_yawpub[i].publish(vm_yaw[i]);
+		vm_data18pub[i].publish(vm_data18[i]);
+	}
 }
 void Linker::outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index)
 {

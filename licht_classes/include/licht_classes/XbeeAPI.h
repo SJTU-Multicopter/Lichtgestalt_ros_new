@@ -71,6 +71,8 @@ void api_tx_status_decode(unsigned char * data, unsigned int pack_len);
 unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len, unsigned int *from_addr_l);
 void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw);
 void decode_pid(unsigned char * data, unsigned int pack_len);
+void decode_general_18(unsigned char * data, unsigned int pack_len, short * data2receive);
+
 
 /*
 void decode_cmd_acc(unsigned char * data, unsigned int pack_len, command_t* cmd, vec3f_t* mot_acc);

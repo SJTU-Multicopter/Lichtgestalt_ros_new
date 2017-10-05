@@ -15,6 +15,7 @@
 
 #include "ros/ros.h"
 #include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"//receive yaw
+#include "/home/wade/catkin_ws/devel/include/licht_controls/data18.h"
 Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {
 	_addr_l = addr_l;
@@ -112,7 +113,7 @@ void Lichtradio::sendPacket(uint8_t * data, uint8_t len)
 //	printf("package ");
 //	fflush(stdout);
 }
-void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
+void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vector<licht_controls::data18> &v_data18)
 {
 	int bufCnt;
 	ioctl (_fd, FIONREAD, &bufCnt);
@@ -129,6 +130,7 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 			//now process the package from _rcvBuf+pack_head to _rcvBuf+pack_head+pack_len
 			unsigned int from_addr_l;
 			float yaw;
+			
 			uint32_t lichtIndex;
 			uint8_t api_id = api_pack_decode(_rcvBuf + pack_head, pack_len);
 			switch(api_id){
@@ -153,7 +155,29 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw)
 						break;
 						case DSCR_ATT:{}
 						break;
-						case DSCR_GEN:{}
+						case DSCR_GEN:{
+							short data2receive[18];
+							decode_general_18(_rcvBuf + pack_head, pack_len, data2receive);
+						//	memcpy(, data+20, 36);
+							v_data18[lichtIndex].data0 = data2receive[0];
+							v_data18[lichtIndex].data1 = data2receive[1];
+							v_data18[lichtIndex].data2 = data2receive[2];
+							v_data18[lichtIndex].data3 = data2receive[3];
+							v_data18[lichtIndex].data4 = data2receive[4];
+							v_data18[lichtIndex].data5 = data2receive[5];
+							v_data18[lichtIndex].data6 = data2receive[6];
+							v_data18[lichtIndex].data7 = data2receive[7];
+							v_data18[lichtIndex].data8 = data2receive[8];
+							v_data18[lichtIndex].data9 = data2receive[9];
+							v_data18[lichtIndex].data10 = data2receive[10];
+							v_data18[lichtIndex].data11 = data2receive[11];
+							v_data18[lichtIndex].data12 = data2receive[12];
+							v_data18[lichtIndex].data13 = data2receive[13];
+							v_data18[lichtIndex].data14 = data2receive[14];
+							v_data18[lichtIndex].data15 = data2receive[15];
+							v_data18[lichtIndex].data16 = data2receive[16];
+							v_data18[lichtIndex].data17 = data2receive[17];
+						}
 						break;
 						case DSCR_PID:{
 							ROS_INFO("received param from #%d",lichtIndex);
