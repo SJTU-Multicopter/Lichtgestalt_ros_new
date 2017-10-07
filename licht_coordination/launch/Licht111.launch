@@ -1,7 +1,7 @@
 <launch>
   <!-- 0-raw, 1-pos, 2-trj -->
   <param name="flight_mode" value="0" type="int" />
-
+  <param name="flight_place" value="1" type="int" />
   <param name="vehicle_num" value="1" type="int" />
   <param name="joy_num" value="1" type="int" />
   <param name="radio_num" value="1" type="int" />

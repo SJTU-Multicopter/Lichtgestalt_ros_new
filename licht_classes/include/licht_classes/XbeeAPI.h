@@ -65,6 +65,7 @@
 #define DSCR_GEN 0x14
 #define DSCR_YAW 0x15
 #define DSCR_PID 0x16
+#define DSCR_POSYAW 0x17
 
 unsigned char api_pack_decode(unsigned char * data, unsigned int pack_len);
 void api_tx_status_decode(unsigned char * data, unsigned int pack_len);
@@ -72,6 +73,7 @@ unsigned char  api_rx_decode(unsigned char * data, unsigned int pack_len, unsign
 void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw);
 void decode_pid(unsigned char * data, unsigned int pack_len);
 void decode_general_18(unsigned char * data, unsigned int pack_len, short * data2receive);
+void decode_pos_yaw(unsigned char * data, unsigned int pack_len, float * yaw, float* x,float* y, float* z);
 
 
 /*
@@ -82,7 +84,7 @@ void decode_calibrate(unsigned char * data, unsigned int pack_len, calib_t* cal)
 void api_pack_encode(unsigned char * data, unsigned char content_len);
 void api_tx_encode(unsigned char * data, unsigned int dest_addr_h, unsigned int dest_addr_l);
 unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
-unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,unsigned char em);
+unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,short em);
 unsigned char encode_pid(unsigned char * data, float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d);
 /*
 unsigned char encode_sens_raw(unsigned char * data, const vec3i16_t* acc, const vec3i16_t* gyr,const vec3i16_t* mag);

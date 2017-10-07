@@ -16,6 +16,8 @@
 #include "ros/ros.h"
 #include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"//receive yaw
 #include "/home/wade/catkin_ws/devel/include/licht_controls/data18.h"
+#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtstate.h"
+
 Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {
 	_addr_l = addr_l;
@@ -113,7 +115,7 @@ void Lichtradio::sendPacket(uint8_t * data, uint8_t len)
 //	printf("package ");
 //	fflush(stdout);
 }
-void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vector<licht_controls::data18> &v_data18)
+void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vector<licht_controls::Lichtstate> &v_state, std::vector<licht_controls::data18> &v_data18)
 {
 	int bufCnt;
 	ioctl (_fd, FIONREAD, &bufCnt);
@@ -130,6 +132,7 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vect
 			//now process the package from _rcvBuf+pack_head to _rcvBuf+pack_head+pack_len
 			unsigned int from_addr_l;
 			float yaw;
+			float pos_x,pos_y,pos_z;
 			
 			uint32_t lichtIndex;
 			uint8_t api_id = api_pack_decode(_rcvBuf + pack_head, pack_len);
@@ -183,6 +186,14 @@ void Lichtradio::readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vect
 							ROS_INFO("received param from #%d",lichtIndex);
 							decode_pid(_rcvBuf + pack_head, pack_len);
 
+						}
+						break;
+						case DSCR_POSYAW:{
+							decode_pos_yaw(_rcvBuf + pack_head, pack_len, &yaw, &pos_x,&pos_y, &pos_z);
+							v_yaw[lichtIndex].yaw = yaw;
+							v_state[lichtIndex].pos_est.x = pos_x;
+							v_state[lichtIndex].pos_est.y = pos_y;
+							v_state[lichtIndex].pos_est.z = pos_z;
 						}
 						break;
 						default:

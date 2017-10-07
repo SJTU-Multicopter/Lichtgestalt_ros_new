@@ -7,6 +7,7 @@
 //#include <licht_controls/Lichtyaw.h>
 #include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"
 #include "/home/wade/catkin_ws/devel/include/licht_controls/data18.h"
+#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtstate.h"
 class Lichtradio;
 class Lichtgestalt;
 typedef std::vector<Lichtgestalt*> LichtgestaltList;
@@ -23,7 +24,7 @@ public:
 	void sendPacket(uint8_t * data, uint8_t len);
 	
 	uint32_t listSize(void);
-	void readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vector<licht_controls::data18> &v_data18);
+	void readBuf(std::vector<licht_controls::Lichtyaw> &v_yaw, std::vector<licht_controls::Lichtstate> &v_state, std::vector<licht_controls::data18> &v_data18);
 
 	uint32_t findIndex(uint32_t addr_l);
 //private:

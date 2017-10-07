@@ -36,7 +36,8 @@ typedef enum status_e {
 	STATUS_LANDED = 0,
 	STATUS_FLYING,
 	STATUS_TAKINGOFF,
-	STATUS_LANDING
+	STATUS_LANDING,
+	STATUS_EMERGENCY
 } flightstatus_t;
 typedef struct joy_s
 {
@@ -57,6 +58,7 @@ private:
 	std::vector<ros::Publisher> vm_rawstptpub, vm_posstptpub;
 	ros::Publisher m_cmdpub;
 	std::vector<ros::Subscriber> vm_joysub, vm_statesub, vm_yawsub;
+	std::vector<ros::Subscriber> vm_state_from_linker_sub;
 	flightmode_t m_mode;
 	flightplace_t m_place;//added by Wade
 	flightstatus_t m_status;
@@ -64,6 +66,7 @@ private:
 	std::vector<setpoints_t> vm_sp;
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;// for initializing or resetting
+	std::vector<licht_controls::Lichtstate> vm_state_from_linker;
 	licht_controls::Lichtcommands m_cmd;
 public:
 	Commander(ros::NodeHandle& nh);
@@ -75,6 +78,7 @@ public:
 	void joyCallback(const sensor_msgs::Joy::ConstPtr& joy, int joy_index);
 	void stateCallback(const licht_controls::Lichtstate::ConstPtr& msg, int vehicle_index);
 	void yawCallback(const licht_controls::Lichtyaw::ConstPtr& msg, int vehicle_index);
+	void state_from_linkerCallback(const licht_controls::Lichtstate::ConstPtr& msg, int vehicle_index);
 };
 Commander::Commander(ros::NodeHandle& nh)
 :vm_rawstptpub(g_vehicle_num)
@@ -82,10 +86,12 @@ Commander::Commander(ros::NodeHandle& nh)
 ,vm_joysub(g_joy_num)
 ,vm_statesub(g_vehicle_num)
 ,vm_yawsub(g_vehicle_num)
+,vm_state_from_linker_sub(g_vehicle_num)
 ,vm_joy(g_joy_num)
 ,vm_sp(g_vehicle_num)
 ,vm_state(g_vehicle_num)
 ,vm_yaw(g_vehicle_num)
+,vm_state_from_linker(g_vehicle_num)
 {
 	m_status = STATUS_LANDED;
 	m_cmd.cut = 0;
@@ -101,6 +107,8 @@ Commander::Commander(ros::NodeHandle& nh)
 		vm_statesub[i] = nh.subscribe<licht_controls::Lichtstate>(msg_name,5,boost::bind(&Commander::stateCallback, this, _1, i));
 		sprintf(msg_name,"/vehicle%d/yaw",i);
 		vm_yawsub[i] = nh.subscribe<licht_controls::Lichtyaw>(msg_name,5,boost::bind(&Commander::yawCallback, this, _1, i));
+		sprintf(msg_name,"/vehicle%d/state_from_linker",i);
+		vm_state_from_linker_sub[i] = nh.subscribe<licht_controls::Lichtstate>(msg_name,5,boost::bind(&Commander::state_from_linkerCallback, this, _1, i));
 	}
 	for(int i=0;i<g_joy_num;i++){
 		sprintf(msg_name,"/joygroup%d/joy",i);
@@ -141,21 +149,113 @@ void Commander::iteration(const ros::TimerEvent& e)
 
 	if (m_place)
 	{
-		for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
-			float pos_moverate[3];
-			pos_moverate[0] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-			pos_moverate[1] = -dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-			pos_moverate[2] = -dead_zone_f(vm_joy[i].axes[2] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
-			vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
-			vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
-			vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
-			vm_sp[i].pos.vel_ff.x = pos_moverate[0];
-			vm_sp[i].pos.vel_ff.y = pos_moverate[1];
-			vm_sp[i].pos.vel_ff.z = pos_moverate[2];
-			float yaw_moverate = -dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
-			vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
-			vm_posstptpub[i].publish(vm_sp[i].pos);
+		if (vm_joy[0].changed_buttons[3] == true)
+		{
+			vm_joy[0].changed_buttons[3] = false;
+			if(m_status == STATUS_FLYING || m_status == STATUS_TAKINGOFF ||m_status == STATUS_LANDING)
+				m_status = STATUS_EMERGENCY;
+			else if(m_status == STATUS_EMERGENCY)//disable emergyency
+				m_status = STATUS_LANDED;
 		}
+		if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == 1){//take off
+			vm_joy[0].changed_arrow[1] = false;
+			if(m_status == STATUS_LANDED){
+				for(int i=0;i<g_vehicle_num;i++){
+					posspReset(i);
+					yawspReset(i);
+					vm_sp[i].pos.pos_sp.z += 1.0f;
+				}
+				m_status = STATUS_TAKINGOFF;
+			}
+		}
+		else if(vm_joy[0].changed_arrow[1] == true && vm_joy[0].curr_arrow[1] == -1){//land
+			vm_joy[0].changed_arrow[1] = false;
+			if(m_status == STATUS_FLYING || m_status == STATUS_TAKINGOFF)
+				m_status = STATUS_LANDING;
+		}
+
+		switch(m_status){
+			case STATUS_EMERGENCY:{
+				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+					/*emergyency procedure*/
+					if (vm_sp[i].pos.commands == 2)
+						vm_sp[i].pos.commands = 1;
+					vm_posstptpub[i].publish(vm_sp[i].pos);
+				}
+			}
+			break;
+			case STATUS_LANDED:{
+				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+					// posspReset(i);//added by Wade
+					// yawspReset(i);//added by Wade
+					vm_sp[i].pos.commands = 1;//1:stop 2:move
+					vm_posstptpub[i].publish(vm_sp[i].pos);
+				}
+				//all motors off
+			}
+			break;
+			case STATUS_FLYING:{
+				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+					float pos_moverate[3];
+					pos_moverate[0] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+					pos_moverate[1] = -dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+					pos_moverate[2] = -dead_zone_f(vm_joy[i].axes[2] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
+					vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
+					vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
+					vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
+					vm_sp[i].pos.vel_ff.x = pos_moverate[0];
+					vm_sp[i].pos.vel_ff.y = pos_moverate[1];
+					vm_sp[i].pos.vel_ff.z = pos_moverate[2];
+					float yaw_moverate = -dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
+					vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
+					vm_sp[i].pos.commands = 2;
+					vm_posstptpub[i].publish(vm_sp[i].pos);
+				}
+			}
+			break;
+			case STATUS_TAKINGOFF:{
+				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+
+					vm_sp[i].pos.pos_sp.x += 0;
+					vm_sp[i].pos.pos_sp.y += 0;
+					vm_sp[i].pos.pos_sp.z -= 0.5*dt;
+					vm_sp[i].pos.vel_ff.x = 0;
+					vm_sp[i].pos.vel_ff.y = 0;
+					vm_sp[i].pos.vel_ff.z = -0.5;
+					vm_sp[i].pos.commands = 2;
+					vm_posstptpub[i].publish(vm_sp[i].pos);
+					if (vm_sp[i].pos.pos_sp.z <= -3.0)
+						m_status = STATUS_FLYING;
+				}
+				//TODO judge if it is time to get into Automatic
+			}
+			break;
+			case STATUS_LANDING:{
+				for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
+
+					vm_sp[i].pos.pos_sp.x += 0;
+					vm_sp[i].pos.pos_sp.y += 0;
+					vm_sp[i].pos.pos_sp.z += 0.2*dt;
+					vm_sp[i].pos.vel_ff.x = 0;
+					vm_sp[i].pos.vel_ff.y = 0;
+					vm_sp[i].pos.vel_ff.z = 0.2;
+					vm_sp[i].pos.commands = 2;
+					vm_sp[i].pos.commands = 2;
+					vm_posstptpub[i].publish(vm_sp[i].pos);
+					if (vm_sp[i].pos.pos_sp.z >= 0.0)//how to judge whether it's landed or not
+						m_status = STATUS_LANDED;
+				}
+				//TODO judge if it is time to get into Idle
+			}
+			break;
+			default:
+			break;
+		}
+
+
+
+
+		
 	}
 	else {
 		//cut off
@@ -223,6 +323,7 @@ void Commander::iteration(const ros::TimerEvent& e)
 								vm_sp[i].pos.vel_ff.z = pos_moverate[2];
 								float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
 								vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
+								vm_sp[i].pos.commands = 1;//added by Wade
 								vm_posstptpub[i].publish(vm_sp[i].pos);
 							}
 						}
@@ -261,9 +362,9 @@ void Commander::iteration(const ros::TimerEvent& e)
 }
 void Commander::posspReset(int index)
 {
-	vm_sp[index].pos.pos_sp.x = vm_state[index].pos_est.x;
-	vm_sp[index].pos.pos_sp.y = vm_state[index].pos_est.y;
-	vm_sp[index].pos.pos_sp.z = vm_state[index].pos_est.z;
+	vm_sp[index].pos.pos_sp.x = vm_state_from_linker[index].pos_est.x;
+	vm_sp[index].pos.pos_sp.y = vm_state_from_linker[index].pos_est.y;
+	vm_sp[index].pos.pos_sp.z = vm_state_from_linker[index].pos_est.z;
 	vm_sp[index].pos.vel_ff.x = 0;
 	vm_sp[index].pos.vel_ff.y = 0;
 	vm_sp[index].pos.vel_ff.z = 0;
@@ -324,6 +425,16 @@ void Commander::stateCallback(const licht_controls::Lichtstate::ConstPtr& msg, i
 	vm_state[vehicle_index].vel_est.x = msg->vel_est.x;
 	vm_state[vehicle_index].vel_est.y = msg->vel_est.y;
 	vm_state[vehicle_index].vel_est.z = msg->vel_est.z;
+//	vm_state[vehicle_index].yaw_est = msg->yaw_est;
+}
+void Commander::state_from_linkerCallback(const licht_controls::Lichtstate::ConstPtr& msg, int vehicle_index)
+{
+	vm_state_from_linker[vehicle_index].pos_est.x = msg->pos_est.x;
+	vm_state_from_linker[vehicle_index].pos_est.y = msg->pos_est.y;
+	vm_state_from_linker[vehicle_index].pos_est.z = msg->pos_est.z;
+	vm_state_from_linker[vehicle_index].vel_est.x = msg->vel_est.x;
+	vm_state_from_linker[vehicle_index].vel_est.y = msg->vel_est.y;
+	vm_state_from_linker[vehicle_index].vel_est.z = msg->vel_est.z;
 //	vm_state[vehicle_index].yaw_est = msg->yaw_est;
 }
 void Commander::yawCallback(const licht_controls::Lichtyaw::ConstPtr& msg, int vehicle_index)

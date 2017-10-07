@@ -66,6 +66,19 @@ void decode_yaw(unsigned char * data, unsigned int pack_len, float * yaw)
 	memcpy(&yaw_sh, data + 20, 2);
 	*yaw = (float)yaw_sh / YAW_F;
 }
+void decode_pos_yaw(unsigned char * data, unsigned int pack_len, float * yaw, float* x,float* y, float* z)
+{
+	short yaw_sh;
+	int pos_i[3];
+	unsigned int timestamp;
+	memcpy(&timestamp, data + 16, 4);
+	memcpy(&pos_i, data + 20, 12);
+	memcpy(&yaw_sh, data + 32, 2);
+	*yaw = (float)yaw_sh / YAW_F;
+	*x = (float)pos_i[0] / 1000.0f;
+	*y = (float)pos_i[1] / 1000.0f;
+	*z = (float)pos_i[2] / 1000.0f;
+}
 void decode_pid(unsigned char * data, unsigned int pack_len)
 {
 //	[3E,0,api_len,90,	0-3
@@ -222,10 +235,10 @@ unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,fl
 	memcpy(data + 32, a, 6);
 	return 21;//length from desc to last data
 }
-unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,unsigned char em)
+unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,short em)
 {
 	unsigned char descriptor = DSCR_POSCTL;
-	short vel[3], acc[3], yw, e;
+	short vel[3], acc[3], yw;//, e;
 	int pos[3];
 	unsigned int timestamp = 0;
 	pos[0] = x * 1000;
@@ -244,7 +257,7 @@ unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float 
 	memcpy(data + 34, vel, 6);
 	memcpy(data + 40, acc, 6);
 	memcpy(data + 46, &yw, 2);
-	memcpy(data + 48, &e, 2);
+	memcpy(data + 48, &em, 2);
 	return 33;//length from desc to last data
 }
 unsigned char encode_pid(unsigned char * data, float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d)
