@@ -13,7 +13,11 @@
 
   <!--include file="$(find vicon_bridge)/launch/vicon.launch"/-->
 
-
+  <group ns="joygroup0">
+    <node pkg="joy" name="joy_node0" type="joy_node" >
+      <param name="dev" value="$(arg joy_dev0)" />
+    </node>
+  </group>
 
 
 
