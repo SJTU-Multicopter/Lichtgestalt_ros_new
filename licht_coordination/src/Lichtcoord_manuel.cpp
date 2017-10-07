@@ -143,16 +143,16 @@ void Commander::iteration(const ros::TimerEvent& e)
 	{
 		for(int i=0;i<g_joy_num && i<g_vehicle_num;i++){
 			float pos_moverate[3];
-			pos_moverate[0] = dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-			pos_moverate[1] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
-			pos_moverate[2] = dead_zone_f(vm_joy[i].axes[3] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
+			pos_moverate[0] = dead_zone_f(vm_joy[i].axes[1] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+			pos_moverate[1] = -dead_zone_f(vm_joy[i].axes[0] * MAX_XY_RATE_MANEUL,XY_RATE_DEADZONE);
+			pos_moverate[2] = -dead_zone_f(vm_joy[i].axes[2] * MAX_Z_RATE_MANEUL,Z_RATE_DEADZONE);
 			vm_sp[i].pos.pos_sp.x += pos_moverate[0]*dt;
 			vm_sp[i].pos.pos_sp.y += pos_moverate[1]*dt;
 			vm_sp[i].pos.pos_sp.z += pos_moverate[2]*dt;
 			vm_sp[i].pos.vel_ff.x = pos_moverate[0];
 			vm_sp[i].pos.vel_ff.y = pos_moverate[1];
 			vm_sp[i].pos.vel_ff.z = pos_moverate[2];
-			float yaw_moverate = dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
+			float yaw_moverate = -dead_zone_f(vm_joy[i].axes[3] * MAX_YAW_RATE_MANEUL, YAWRATE_DEADZONE);//rate
 			vm_sp[i].pos.yaw_sp += yaw_moverate *dt;
 			vm_posstptpub[i].publish(vm_sp[i].pos);
 		}
