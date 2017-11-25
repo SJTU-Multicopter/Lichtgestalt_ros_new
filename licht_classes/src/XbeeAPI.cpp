@@ -235,6 +235,17 @@ unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,fl
 	memcpy(data + 32, a, 6);
 	return 21;//length from desc to last data
 }
+unsigned char encode_rc(unsigned char * data, short * channels)
+{
+	unsigned char descriptor = DSCR_RC;
+	unsigned int timestamp = 0;
+	
+	memcpy(data + 17, &descriptor, 1);
+	memcpy(data + 18, &timestamp, 4);
+	memcpy(data + 22, channels, 20);
+
+	return 25;//length from desc to last data
+}
 unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,short em)
 {
 	unsigned char descriptor = DSCR_POSCTL;

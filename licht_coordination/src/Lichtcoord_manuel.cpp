@@ -6,13 +6,14 @@
 #include <sensor_msgs/Joy.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Twist.h>
-#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtsetpoints.h>
-#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtoutput.h>
-#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtsetpointsraw.h>
-#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtstate.h>
-#include </home/wade/catkin_ws/devel/include/licht_controls/Lichtcommands.h>
+#include </home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtsetpoints.h>
+#include </home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtoutput.h>
+#include </home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtsetpointsraw.h>
+#include </home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtstate.h>
+#include </home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtcommands.h>
+//#include <licht_coordination/rc.h>
 //#include <licht_controls/Lichtyaw.h>
-#include  "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"
+#include  "/home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtyaw.h"
 #define MAX_ATT_MANUEL 0.698f//11437 40deg,0.698rad
 #define MAX_YAW_RATE_MANEUL 0.698f
 #define YAWRATE_DEADZONE 0.17f
@@ -44,6 +45,7 @@ typedef struct joy_s
 	bool curr_buttons[14];
 	bool changed_buttons[14];
 	float axes[4];
+	float aux_axes[4];
 	int curr_arrow[2];
 	bool changed_arrow[2];
 }joy_t;
@@ -55,7 +57,7 @@ typedef struct Setpoint_s
 class Commander
 {
 private:
-	std::vector<ros::Publisher> vm_rawstptpub, vm_posstptpub;
+	std::vector<ros::Publisher> vm_rawstptpub, vm_posstptpub;//, vm_rc_pub;
 	ros::Publisher m_cmdpub;
 	std::vector<ros::Subscriber> vm_joysub, vm_statesub, vm_yawsub;
 	std::vector<ros::Subscriber> vm_state_from_linker_sub;
@@ -63,6 +65,7 @@ private:
 	flightplace_t m_place;//added by Wade
 	flightstatus_t m_status;
 	std::vector<joy_t> vm_joy;
+//	std::vector<joy_t> vm_rc;
 	std::vector<setpoints_t> vm_sp;
 	std::vector<licht_controls::Lichtstate> vm_state;
 	std::vector<licht_controls::Lichtyaw> vm_yaw;// for initializing or resetting
@@ -83,6 +86,7 @@ public:
 Commander::Commander(ros::NodeHandle& nh)
 :vm_rawstptpub(g_vehicle_num)
 ,vm_posstptpub(g_vehicle_num)
+//,vm_rc_pub(g_joy_num)
 ,vm_joysub(g_joy_num)
 ,vm_statesub(g_vehicle_num)
 ,vm_yawsub(g_vehicle_num)
@@ -397,6 +401,10 @@ void Commander::joyCallback(const sensor_msgs::Joy::ConstPtr& joy, int joy_index
 	vm_joy[joy_index].axes[1] = joy->axes[5];//pitch
 	vm_joy[joy_index].axes[2] = joy->axes[1];//yaw
 	vm_joy[joy_index].axes[3] = joy->axes[0];//thr
+	vm_joy[joy_index].aux_axes[0] = joy->axes[3];//left zeiger
+	vm_joy[joy_index].aux_axes[1] = joy->axes[4];//right zeiger
+	vm_joy[joy_index].aux_axes[2] = joy->axes[6];//left right button
+	vm_joy[joy_index].aux_axes[3] = joy->axes[7];//up down button
 	if(joy->axes[6]>0.5)//left and right button is one axes
 		vm_joy[joy_index].curr_arrow[0] = 1;
 	else if(joy->axes[6]<-0.5)

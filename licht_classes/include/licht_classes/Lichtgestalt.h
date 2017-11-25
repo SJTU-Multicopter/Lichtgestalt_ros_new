@@ -14,6 +14,7 @@ public:
 	void sendPosSp(float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,short em);//added by Wade
 	void sendAck(void);
 	void sendAll(float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
+	void sendRC(short * channel);
 	void sendTune(float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d);
 	void acquireYaw(void);
 	uint32_t getAddr(void);

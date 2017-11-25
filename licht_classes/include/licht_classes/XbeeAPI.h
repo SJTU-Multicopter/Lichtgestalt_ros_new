@@ -58,6 +58,7 @@
 #define DSCR_CAL 0x02
 #define DSCR_CFG 0x03
 #define DSCR_POSCTL 0x04
+#define DSCR_RC 0x05
 
 #define DSCR_SENS_RAW 0x11
 #define DSCR_SENS 0x12
@@ -86,6 +87,8 @@ void api_tx_encode(unsigned char * data, unsigned int dest_addr_h, unsigned int 
 unsigned char encode_cmd_acc(unsigned char * data, float q0,float q1,float q2,float q3,float thrust,float ax,float ay,float az);
 unsigned char encode_pos_sp(unsigned char * data, float x,float y,float z,float vx,float vy,float vz,float ax,float ay,float az,float yaw,short em);
 unsigned char encode_pid(unsigned char * data, float pr_P,float pr_p,float pr_i,float pr_d,float y_P,float y_p,float y_i,float y_d);
+unsigned char encode_rc(unsigned char * data, short * channels);
+
 /*
 unsigned char encode_sens_raw(unsigned char * data, const vec3i16_t* acc, const vec3i16_t* gyr,const vec3i16_t* mag);
 unsigned char encode_att(unsigned char * data, const stateAtt_t* att);

@@ -14,9 +14,9 @@
 #include <sys/stat.h>
 
 #include "ros/ros.h"
-#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtyaw.h"//receive yaw
-#include "/home/wade/catkin_ws/devel/include/licht_controls/data18.h"
-#include "/home/wade/catkin_ws/devel/include/licht_controls/Lichtstate.h"
+#include "/home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtyaw.h"//receive yaw
+#include "/home/ubuntu/catkin_ws/devel/include/licht_controls/data18.h"
+#include "/home/ubuntu/catkin_ws/devel/include/licht_controls/Lichtstate.h"
 
 Lichtradio::Lichtradio(uint32_t addr_l, const char device_name[30])
 {

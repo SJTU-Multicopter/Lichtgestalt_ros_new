@@ -3,7 +3,7 @@
 #include <stdio.h> //sprintf
 #include <iostream>
 #include <vector>
-
+#include <sensor_msgs/Joy.h>
 #include <licht_controls/Lichtoutput.h>//send att setpoint out
 #include <licht_controls/Lichtstate.h>//send acc out
 #include <licht_controls/Lichtcommands.h>
@@ -17,6 +17,7 @@
 #include <boost/program_options.hpp>
 int g_vehicle_num = 2;
 int g_radio_num = 2;
+int g_joy_num=2;
 /*added by Wade*/
 typedef enum place_e {
 	PLACE_INDOOR = 0,
@@ -28,14 +29,30 @@ double get(const ros::NodeHandle& n, const std::string& name)
 	n.getParam(name, value);
 	return value;
 }
+typedef struct joy_s
+{
+	bool curr_buttons[14];
+	bool changed_buttons[14];
+	float axes[4];
+	float aux_axes[4];
+	int curr_arrow[2];
+	bool changed_arrow[2];
+}joy_t;
+typedef struct rc_s
+{
+	float channels[10];
+	short short_ch[10];
+}rc_t;
 class Linker
 {
 private:
 	std::vector<ros::Publisher> vm_yawpub;
 	std::vector<ros::Publisher> vm_data18pub;
 	std::vector<ros::Subscriber> vm_statesub, vm_outputsub;
+	std::vector<ros::Subscriber> vm_joysub;
 	std::vector<ros::Publisher> vm_state_from_linker_pub;
-
+	std::vector<joy_t> vm_joy;
+	std::vector<rc_t> vm_rc;
 	std::vector<ros::Subscriber> vm_outdoorsub;//added by Wade
 	ros::Subscriber tunesub;
 	std::vector<licht_controls::Lichtstate> vm_state;
@@ -60,10 +77,14 @@ public:
 	void outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, int vehicle_index);
 	void stateCallback(const licht_controls::Lichtstate::ConstPtr&msg, int vehicle_index);
 	void tuneCallback(const std_msgs::Int32::ConstPtr&msg);
+	void joyCallback(const sensor_msgs::Joy::ConstPtr& joy, int joy_index);
 	void outdoorCallback(const licht_controls::Lichtsetpoints::ConstPtr& msg, int vehicle_index);//added by Wade
 };
 Linker::Linker(ros::NodeHandle& nh)
 :vm_statesub(g_vehicle_num)
+,vm_joysub(g_joy_num)
+,vm_joy(g_joy_num)
+,vm_rc(g_joy_num)
 ,vm_outputsub(g_vehicle_num)
 ,vm_yawpub(g_vehicle_num)
 ,vm_data18pub(g_vehicle_num)
@@ -78,6 +99,7 @@ Linker::Linker(ros::NodeHandle& nh)
 //,vm_radio(g_radio_num)
 //,vm_vehicle(g_vehicle_num)
 {
+	
 	char msg_name[50];
 	PID_rewrite = -1;
 	for(int i=0;i<g_vehicle_num;i++){
@@ -99,6 +121,12 @@ Linker::Linker(ros::NodeHandle& nh)
 
 		sprintf(msg_name,"/vehicle%d/state_from_linker",i);
 		vm_state_from_linker_pub[i] = nh.advertise<licht_controls::Lichtstate>(msg_name, 1);
+	}
+	for(int i=0;i<g_joy_num;i++){
+		sprintf(msg_name,"/joygroup%d/joy",i);
+		vm_joysub[i] = nh.subscribe<sensor_msgs::Joy>(msg_name,5,boost::bind(&Linker::joyCallback, this, _1, i));
+		vm_rc[i].channels[4] = -1;
+		vm_rc[i].channels[2] = -1;
 	}
 //	ros::NodeHandle n;
 	tunesub = nh.subscribe("/tune_index",1, &Linker::tuneCallback, this);
@@ -217,31 +245,32 @@ void Linker::iteration(const ros::TimerEvent& e)
 		PID_rewrite = -1;
 	}
 	else{
-		if (m_place)
-		{
-			/*added by Wade*/
-			vm_vehicle[i].sendPosSp(
-				vm_outdoor[i].pos_sp.x,
-				vm_outdoor[i].pos_sp.y,
-				vm_outdoor[i].pos_sp.z,
-				vm_outdoor[i].vel_ff.x,
-				vm_outdoor[i].vel_ff.y,
-				vm_outdoor[i].vel_ff.z,
-				0.0,0.0,0.0,
-				vm_outdoor[i].yaw_sp,vm_outdoor[i].commands);
-		}
-		else {
+//		if (m_place)
+		// {
+		// 	/*added by Wade*/
+		// 	vm_vehicle[i].sendPosSp(
+		// 		vm_outdoor[i].pos_sp.x,
+		// 		vm_outdoor[i].pos_sp.y,
+		// 		vm_outdoor[i].pos_sp.z,
+		// 		vm_outdoor[i].vel_ff.x,
+		// 		vm_outdoor[i].vel_ff.y,
+		// 		vm_outdoor[i].vel_ff.z,
+		// 		0.0,0.0,0.0,
+		// 		vm_outdoor[i].yaw_sp,vm_outdoor[i].commands);
+		// }
+		// else {
 			
-			vm_vehicle[i].sendAll(
-			vm_output[i].q_sp[0],
-			vm_output[i].q_sp[1],
-			vm_output[i].q_sp[2],
-			vm_output[i].q_sp[3],
-			vm_output[i].thrust*1000,
-			vm_state[i].acc_est.x,
-			vm_state[i].acc_est.y,
-			vm_state[i].acc_est.z);
-		}
+		// 	vm_vehicle[i].sendAll(
+		// 	vm_output[i].q_sp[0],
+		// 	vm_output[i].q_sp[1],
+		// 	vm_output[i].q_sp[2],
+		// 	vm_output[i].q_sp[3],
+		// 	vm_output[i].thrust*1000,
+		// 	vm_state[i].acc_est.x,
+		// 	vm_state[i].acc_est.y,
+		// 	vm_state[i].acc_est.z);
+		// }
+		vm_vehicle[i].sendRC(vm_rc[i].short_ch);
 		i++;
 		if(i==g_vehicle_num)
 			i=0;
@@ -267,6 +296,82 @@ void Linker::outputCallback(const licht_controls::Lichtoutput::ConstPtr& msg, in
 	vm_output[vehicle_index].q_sp[2] = msg->q_sp[2];
 	vm_output[vehicle_index].q_sp[3] = msg->q_sp[3];
 	vm_output[vehicle_index].thrust = msg->thrust;
+}
+void Linker::joyCallback(const sensor_msgs::Joy::ConstPtr& joy, int joy_index)
+{
+	//0 PosCtrl, 1 AttCtrl
+	#define MAX_JOYS 5
+	static bool l_buttons[MAX_JOYS][14];//at most 5 joysticks
+	static int l_arrow[MAX_JOYS][2];
+	for(int i=0;i<14;i++){
+		vm_joy[joy_index].curr_buttons[i] = joy->buttons[i];
+		if(vm_joy[joy_index].curr_buttons[i] != l_buttons[joy_index][i])
+			vm_joy[joy_index].changed_buttons[i] = true;
+		else
+			;//changed_buttons cleared in iteration
+	}
+	for(int i=0;i<14;i++){
+		l_buttons[joy_index][i] = vm_joy[joy_index].curr_buttons[i];
+	}
+	vm_joy[joy_index].axes[0] = joy->axes[2];//roll
+	vm_joy[joy_index].axes[1] = joy->axes[5];//pitch
+	vm_joy[joy_index].axes[2] = joy->axes[1];//yaw
+	vm_joy[joy_index].axes[3] = joy->axes[0];//thr
+	vm_joy[joy_index].aux_axes[0] = joy->axes[3];//left zeiger
+	vm_joy[joy_index].aux_axes[1] = joy->axes[4];//right zeiger
+	vm_joy[joy_index].aux_axes[2] = joy->axes[6];//left right button
+	vm_joy[joy_index].aux_axes[3] = joy->axes[7];//up down button
+	if(joy->axes[6]>0.5)//left and right button is one axes
+		vm_joy[joy_index].curr_arrow[0] = 1;
+	else if(joy->axes[6]<-0.5)
+		vm_joy[joy_index].curr_arrow[0] = -1;
+	else
+		vm_joy[joy_index].curr_arrow[0] = 0;
+	if(joy->axes[7]>0.5)//up and down button is one axes
+		vm_joy[joy_index].curr_arrow[1] = 1;
+	else if(joy->axes[7]<-0.5)
+		vm_joy[joy_index].curr_arrow[1] = -1;
+	else
+		vm_joy[joy_index].curr_arrow[1] = 0;
+	for(int i=0;i<2;i++){
+		if(vm_joy[joy_index].curr_arrow[i] != l_arrow[joy_index][i])
+			vm_joy[joy_index].changed_arrow[i] = true;
+	}
+	for(int i=0;i<2;i++){
+		l_arrow[joy_index][i] = vm_joy[joy_index].curr_arrow[i];
+	}
+
+	for(int i=0;i<4;i++){
+		vm_rc[joy_index].channels[i] = constrain_f(vm_joy[joy_index].axes[i]*1.41f, -1.0f, 1.0f);
+		//joystick has round stick space
+		//while RC has squared stick space
+	}
+	
+	if(vm_joy[joy_index].changed_arrow[1] == true){
+		vm_rc[joy_index].channels[4] += vm_joy[joy_index].curr_arrow[1];
+		vm_rc[joy_index].channels[4] = constrain_f(vm_rc[joy_index].channels[4], -1.0f, 1.0f);
+	}
+	if(vm_joy[joy_index].changed_arrow[0] == true){
+		vm_rc[joy_index].channels[5] -= vm_joy[joy_index].curr_arrow[0];
+		vm_rc[joy_index].channels[5] = constrain_f(vm_rc[joy_index].channels[5], -1.0f, 1.0f);
+	}
+	if(joy->buttons[4]){
+		vm_rc[joy_index].channels[0] = 1.0f;
+		vm_rc[joy_index].channels[1] = -1.0f;
+		vm_rc[joy_index].channels[2] = -1.0f;
+		vm_rc[joy_index].channels[3] = -1.0f;
+	}
+	else if(joy->buttons[5]){
+		vm_rc[joy_index].channels[0] = -1.0f;
+		vm_rc[joy_index].channels[1] = -1.0f;
+		vm_rc[joy_index].channels[2] = -1.0f;
+		vm_rc[joy_index].channels[3] = 1.0f;
+	}
+	for(int i=0;i<10;i++){
+		vm_rc[joy_index].short_ch[i] = vm_rc[joy_index].channels[i] * 1000;
+	}
+	printf("channels:\n%d\n%d\n%d\n%d\n%d\n%d\n", vm_rc[joy_index].short_ch[0], vm_rc[joy_index].short_ch[1], 
+		vm_rc[joy_index].short_ch[2], vm_rc[joy_index].short_ch[3], vm_rc[joy_index].short_ch[4], vm_rc[joy_index].short_ch[5]);
 }
 void Linker::stateCallback(const licht_controls::Lichtstate::ConstPtr&msg, int vehicle_index)
 {
@@ -297,6 +402,7 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "linker");
 	ros::NodeHandle n("~");
+	n.getParam("/joy_num", g_joy_num);
 	n.getParam("/vehicle_num", g_vehicle_num);
 	n.getParam("/radio_num", g_radio_num);
 	Linker linker(n);
